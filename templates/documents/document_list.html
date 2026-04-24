@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Mis Documentos</h2>
+<a href="{% url 'document_upload' %}" class="btn">Subir nuevo documento</a>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Archivo Original</th>
+            <th>Estado</th>
+            <th>Fecha Subida</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for doc in documents %}
+        <tr>
+            <td>{{ doc.id }}</td>
+            <td><a href="{{ doc.original_file.url }}" target="_blank">Ver original</a></td>
+            <td>
+                {% if doc.status == 'signed' %}
+                    <span style="color: green; font-weight: bold;">Firmado</span><br>
+                    <small>{{ doc.signed_at|date:"d/m/Y H:i" }}</small>
+                {% else %}
+                    <span style="color: orange; font-weight: bold;">Pendiente</span>
+                {% endif %}
+            </td>
+            <td>{{ doc.created_at|date:"d/m/Y H:i" }}</td>
+            <td>
+                {% if doc.status == 'uploaded' %}
+                    <a href="{% url 'document_sign' doc.id %}" class="btn">Firmar PDF</a>
+                {% else %}
+                    <a href="{{ doc.signed_file.url }}" class="btn" target="_blank">Descargar Firmado</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" style="text-align: center;">No has subido ningún documento aún.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Firmar Documento</h2>
+<p>Estás a punto de firmar el documento original que subiste.</p>
+
+<div style="background: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+    <strong>Instrucciones:</strong>
+    <ul>
+        <li>Selecciona tu archivo de certificado digital (.p12).</li>
+        <li>Ingresa la contraseña asociada a tu certificado.</li>
+        <li>Haz clic en "Firmar Documento".</li>
+    </ul>
+    <em>Nota: El certificado y la contraseña no se guardan en el servidor. Se usan temporalmente en memoria para generar la firma.</em>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn">Firmar Documento</button>
+    <a href="{% url 'document_list' %}" class="btn btn-danger">Cancelar</a>
+</form>
+{% endblock %}
