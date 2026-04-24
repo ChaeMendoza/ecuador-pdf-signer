@@ -34,6 +34,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'apps.users.middleware.NoCacheAuthenticatedMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -90,3 +91,26 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = 'document_list'
 LOGOUT_REDIRECT_URL = 'login'
 LOGIN_URL = 'login'
+
+# ==========================================
+# CONFIGURACIÓN DE SESIONES Y SEGURIDAD (OWASP)
+# ==========================================
+
+# Expira la sesión instantáneamente cuando el usuario cierra su navegador
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# Evita que JavaScript pueda leer la cookie de sesión (protección contra XSS)
+SESSION_COOKIE_HTTPONLY = True
+
+# Evita que JavaScript pueda leer el token CSRF (protección extra contra XSS/CSRF)
+CSRF_COOKIE_HTTPONLY = True
+
+# Restringe cuándo se envía la cookie a otros sitios (previene peticiones falsificadas)
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+# Solo enviar la cookie de sesión a través de conexiones seguras HTTPS.
+# (Se usa `not DEBUG` para que en localhost siga funcionando, pero en Prod exija HTTPS)
+SESSION_COOKIE_SECURE = not DEBUG
+
+# Expira la sesión automáticamente tras 30 minutos de inactividad (1800 segundos)
+SESSION_COOKIE_AGE = 1800
