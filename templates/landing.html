@@ -1,0 +1,1162 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SignApp – Firma Digital de PDFs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<link href="{% static 'dist/output.css' %}" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue-950: #0f172a;
+    --blue-900: #1e3a8a;
+    --blue-800: #1e40af;
+    --blue-600: #2563eb;
+    --blue-400: #60a5fa;
+    --blue-300: #93c5fd;
+    --blue-200: #bfdbfe;
+    --green-400: #4ade80;
+    --white: #ffffff;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-400: #94a3b8;
+    --gray-500: #64748b;
+    --gray-600: #475569;
+    --gray-700: #334155;
+    --gray-900: #0f172a;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--white);
+    color: var(--gray-900);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, .display {
+    font-family: 'Sora', sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  /* ─── NAVBAR ─── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 0 2rem;
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(226,232,240,0.8);
+  }
+
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+
+  .nav-logo-icon {
+    width: 34px; height: 34px;
+    background: var(--blue-600);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nav-logo-icon svg { width: 18px; height: 18px; color: white; }
+
+  .nav-brand {
+    font-family: 'Sora', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--gray-900);
+    letter-spacing: -0.03em;
+  }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .nav-link {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--gray-600);
+    text-decoration: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    transition: color 0.15s, background 0.15s;
+  }
+
+  .nav-link:hover { color: var(--gray-900); background: var(--gray-100); }
+
+  .btn-primary {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: white;
+    background: var(--blue-600);
+    padding: 0.55rem 1.25rem;
+    border-radius: 10px;
+    text-decoration: none;
+    letter-spacing: -0.01em;
+    transition: opacity 0.15s, transform 0.15s;
+    box-shadow: 0 1px 3px rgba(37,99,235,0.3), 0 4px 12px rgba(37,99,235,0.2);
+  }
+
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+  /* ─── HERO ─── */
+  .hero {
+    min-height: 100vh;
+    padding-top: 68px;
+    background: linear-gradient(160deg, #0f172a 0%, #1e3a8a 55%, #1e40af 100%);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: 4rem;
+    padding-left: clamp(2rem, 8vw, 6rem);
+    padding-right: clamp(2rem, 8vw, 6rem);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Decorative mesh background */
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 80% 40%, rgba(96,165,250,0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 10% 80%, rgba(167,139,250,0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  /* Subtle grid lines */
+  .hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+  }
+
+  .hero-content { position: relative; z-index: 1; }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(30,58,138,0.6);
+    border: 1px solid rgba(96,165,250,0.3);
+    border-radius: 100px;
+    padding: 6px 14px;
+    margin-bottom: 2rem;
+  }
+
+  .badge-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green-400);
+    box-shadow: 0 0 8px rgba(74,222,128,0.6);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.2); }
+  }
+
+  .badge-text {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--blue-200);
+    letter-spacing: 0.01em;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.4rem, 4vw, 3.4rem);
+    font-weight: 800;
+    color: white;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero h1 em {
+    font-style: normal;
+    background: linear-gradient(135deg, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-desc {
+    font-size: 1.05rem;
+    font-weight: 300;
+    color: var(--blue-300);
+    line-height: 1.75;
+    margin-bottom: 2.5rem;
+    max-width: 500px;
+  }
+
+  .hero-cta {
+    display: flex;
+    gap: 0.875rem;
+    flex-wrap: wrap;
+    margin-bottom: 3rem;
+  }
+
+  .btn-hero-primary {
+    font-family: 'Sora', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: white;
+    background: var(--blue-600);
+    padding: 0.875rem 2rem;
+    border-radius: 14px;
+    text-decoration: none;
+    letter-spacing: -0.01em;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 8px 24px rgba(37,99,235,0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-hero-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.15), 0 16px 40px rgba(37,99,235,0.5);
+  }
+
+  .btn-hero-secondary {
+    font-family: 'Sora', sans-serif;
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: rgba(255,255,255,0.8);
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 0.875rem 2rem;
+    border-radius: 14px;
+    text-decoration: none;
+    letter-spacing: -0.01em;
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  .btn-hero-secondary:hover {
+    background: rgba(255,255,255,0.13);
+    border-color: rgba(255,255,255,0.25);
+  }
+
+  .hero-trust {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .trust-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: rgba(147,197,253,0.7);
+    font-weight: 400;
+  }
+
+  .trust-item svg { width: 14px; height: 14px; color: var(--green-400); flex-shrink: 0; }
+
+  /* ─── HERO MOCKUP ─── */
+  .hero-visual { position: relative; z-index: 1; }
+
+  .mockup-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 1.5rem;
+    backdrop-filter: blur(20px);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.05),
+      0 32px 80px rgba(0,0,0,0.4),
+      inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+
+  .mockup-dots {
+    display: flex; gap: 6px; margin-bottom: 1.25rem;
+  }
+
+  .mockup-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+
+  .mockup-window {
+    background: rgba(15,23,42,0.8);
+    border-radius: 12px;
+    padding: 1.25rem;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .mockup-toolbar {
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .mockup-toolbar-icon { width: 14px; height: 14px; color: var(--blue-400); }
+
+  .mockup-toolbar-text {
+    font-size: 0.7rem;
+    color: var(--gray-400);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .mockup-doc {
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+    padding: 1rem;
+    border: 1px solid rgba(255,255,255,0.05);
+    space-y: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .mockup-line {
+    height: 8px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+
+  .mockup-signature-area {
+    background: rgba(37,99,235,0.15);
+    border: 1.5px dashed rgba(96,165,250,0.4);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    margin: 0.75rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mockup-signature-area::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(37,99,235,0.05), transparent);
+  }
+
+  .mockup-sig-icon {
+    width: 36px; height: 36px;
+    background: rgba(37,99,235,0.3);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 6px;
+  }
+
+  .mockup-sig-label {
+    font-size: 0.68rem;
+    color: rgba(147,197,253,0.6);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .mockup-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+  }
+
+  .mockup-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(74,222,128,0.1);
+    border: 1px solid rgba(74,222,128,0.2);
+    border-radius: 100px;
+    padding: 4px 10px;
+    font-size: 0.68rem;
+    color: var(--green-400);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .mockup-status-dot {
+    width: 5px; height: 5px;
+    background: var(--green-400);
+    border-radius: 50%;
+  }
+
+  .mockup-badge {
+    position: absolute;
+    top: -12px;
+    right: -12px;
+    background: var(--green-400);
+    color: #0f172a;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 100px;
+    box-shadow: 0 4px 12px rgba(74,222,128,0.4);
+    letter-spacing: 0.01em;
+  }
+
+  /* ─── SECTION BASE ─── */
+  .section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--blue-600);
+    margin-bottom: 1rem;
+  }
+
+  .section-label::before {
+    content: '';
+    width: 20px;
+    height: 2px;
+    background: var(--blue-600);
+    border-radius: 1px;
+  }
+
+  .section-title {
+    font-size: clamp(1.8rem, 3vw, 2.5rem);
+    font-weight: 800;
+    color: var(--gray-900);
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    margin-bottom: 1rem;
+  }
+
+  .section-title.light { color: white; }
+
+  .section-subtitle {
+    font-size: 1.05rem;
+    color: var(--gray-500);
+    line-height: 1.7;
+    font-weight: 300;
+    max-width: 520px;
+  }
+
+  .section-subtitle.light { color: var(--blue-300); }
+
+  /* ─── FEATURES ─── */
+  .features {
+    padding: 7rem clamp(2rem, 8vw, 6rem);
+    background: var(--gray-50);
+    position: relative;
+  }
+
+  .features-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 4rem;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .feature-card {
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: 18px;
+    padding: 1.75rem;
+    transition: transform 0.25s, box-shadow 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    opacity: 0;
+    transition: opacity 0.25s;
+    border-radius: 18px 18px 0 0;
+  }
+
+  .feature-card.blue::before { background: linear-gradient(90deg, #2563eb, #60a5fa); }
+  .feature-card.purple::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+  .feature-card.green::before { background: linear-gradient(90deg, #059669, #4ade80); }
+  .feature-card.amber::before { background: linear-gradient(90deg, #d97706, #fbbf24); }
+
+  .feature-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.08);
+  }
+
+  .feature-card:hover::before { opacity: 1; }
+
+  .feature-icon {
+    width: 46px; height: 46px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+  }
+
+  .feature-icon svg { width: 22px; height: 22px; }
+  .icon-blue { background: rgba(37,99,235,0.1); }
+  .icon-blue svg { color: var(--blue-600); }
+  .icon-purple { background: rgba(124,58,237,0.1); }
+  .icon-purple svg { color: #7c3aed; }
+  .icon-green { background: rgba(5,150,105,0.1); }
+  .icon-green svg { color: #059669; }
+  .icon-amber { background: rgba(217,119,6,0.1); }
+  .icon-amber svg { color: #d97706; }
+
+  .feature-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.01em;
+  }
+
+  .feature-desc {
+    font-size: 0.85rem;
+    color: var(--gray-500);
+    line-height: 1.65;
+    font-weight: 400;
+  }
+
+  /* ─── STEPS ─── */
+  .steps {
+    padding: 7rem clamp(2rem, 8vw, 6rem);
+    background: white;
+  }
+
+  .steps-inner {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .steps-header {
+    text-align: center;
+    margin-bottom: 4rem;
+  }
+
+  .steps-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+  }
+
+  .steps-list::before {
+    content: '';
+    position: absolute;
+    left: 19px;
+    top: 40px;
+    bottom: 40px;
+    width: 2px;
+    background: linear-gradient(180deg, var(--blue-600) 0%, rgba(37,99,235,0.1) 100%);
+  }
+
+  .step-item {
+    display: flex;
+    gap: 1.75rem;
+    align-items: flex-start;
+    padding: 1.5rem 0;
+    position: relative;
+  }
+
+  .step-num {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--blue-600);
+    color: white;
+    font-family: 'Sora', sans-serif;
+    font-weight: 800;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 0 0 4px white, 0 0 0 6px rgba(37,99,235,0.2);
+    transition: transform 0.2s;
+  }
+
+  .step-item:last-child .step-num {
+    background: #059669;
+    box-shadow: 0 0 0 4px white, 0 0 0 6px rgba(5,150,105,0.2);
+  }
+
+  .step-item:hover .step-num { transform: scale(1.1); }
+
+  .step-body {
+    flex: 1;
+    padding: 1.5rem 2rem;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-100);
+    border-radius: 16px;
+    transition: background 0.2s, border-color 0.2s;
+    margin-top: 0;
+  }
+
+  .step-item:last-child .step-body {
+    background: rgba(5,150,105,0.04);
+    border-color: rgba(5,150,105,0.15);
+  }
+
+  .step-item:hover .step-body {
+    background: white;
+    border-color: var(--gray-200);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+  }
+
+  .step-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 0.35rem;
+    letter-spacing: -0.01em;
+  }
+
+  .step-desc {
+    font-size: 0.875rem;
+    color: var(--gray-500);
+    line-height: 1.65;
+    font-weight: 400;
+  }
+
+  /* ─── SECURITY ─── */
+  .security {
+    padding: 7rem clamp(2rem, 8vw, 6rem);
+    background: linear-gradient(150deg, #0f172a 0%, #1e3a8a 60%, #1e40af 100%);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .security::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 50% 70% at 90% 20%, rgba(96,165,250,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 50% at 5% 90%, rgba(167,139,250,0.05) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .security::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+  }
+
+  .security-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  .security-header {
+    text-align: center;
+    margin-bottom: 4rem;
+  }
+
+  .security-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+
+  .security-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 18px;
+    padding: 2rem;
+    backdrop-filter: blur(10px);
+    transition: background 0.2s, border-color 0.2s, transform 0.2s;
+  }
+
+  .security-card:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.15);
+    transform: translateY(-4px);
+  }
+
+  .security-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+  }
+
+  .security-icon svg { width: 20px; height: 20px; }
+  .sicon-blue { background: rgba(96,165,250,0.15); }
+  .sicon-blue svg { color: var(--blue-400); }
+  .sicon-green { background: rgba(74,222,128,0.12); }
+  .sicon-green svg { color: var(--green-400); }
+  .sicon-purple { background: rgba(167,139,250,0.12); }
+  .sicon-purple svg { color: #a78bfa; }
+
+  .security-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.01em;
+  }
+
+  .security-desc {
+    font-size: 0.85rem;
+    color: var(--blue-300);
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  /* ─── CTA ─── */
+  .cta {
+    padding: 7rem clamp(2rem, 8vw, 6rem);
+    background: white;
+    text-align: center;
+  }
+
+  .cta-inner {
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .cta-eyebrow {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--blue-600);
+    margin-bottom: 1.25rem;
+  }
+
+  .cta h2 {
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 800;
+    color: var(--gray-900);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin-bottom: 1.25rem;
+  }
+
+  .cta p {
+    font-size: 1.05rem;
+    color: var(--gray-500);
+    line-height: 1.7;
+    font-weight: 300;
+    margin-bottom: 2.5rem;
+  }
+
+  .btn-cta {
+    font-family: 'Sora', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    color: white;
+    background: var(--blue-600);
+    padding: 1rem 2.5rem;
+    border-radius: 16px;
+    text-decoration: none;
+    letter-spacing: -0.01em;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 6px rgba(37,99,235,0.2), 0 12px 40px rgba(37,99,235,0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .btn-cta:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 10px rgba(37,99,235,0.25), 0 20px 60px rgba(37,99,235,0.4);
+  }
+
+  .cta-note {
+    margin-top: 1.25rem;
+    font-size: 0.8rem;
+    color: var(--gray-400);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .cta-note span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .cta-note svg { width: 12px; height: 12px; color: var(--green-400); }
+
+  /* ─── FOOTER ─── */
+  footer {
+    background: var(--gray-900);
+    padding: 2.5rem clamp(2rem, 8vw, 6rem);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .footer-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .footer-logo-icon {
+    width: 30px; height: 30px;
+    background: rgba(37,99,235,0.3);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .footer-logo-icon svg { width: 15px; height: 15px; color: var(--blue-400); }
+
+  .footer-brand {
+    font-family: 'Sora', sans-serif;
+    font-weight: 700;
+    color: white;
+    font-size: 0.95rem;
+    letter-spacing: -0.02em;
+  }
+
+  .footer-copy {
+    font-size: 0.8rem;
+    color: var(--gray-500);
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .footer-links a {
+    font-size: 0.8rem;
+    color: var(--gray-500);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .footer-links a:hover { color: white; }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 1024px) {
+    .hero {
+      grid-template-columns: 1fr;
+      text-align: center;
+    }
+    .hero-visual { display: none; }
+    .hero-cta { justify-content: center; }
+    .hero-trust { justify-content: center; }
+    .features-grid { grid-template-columns: repeat(2, 1fr); }
+    .security-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 640px) {
+    .features-grid { grid-template-columns: 1fr; }
+    footer { flex-direction: column; text-align: center; }
+    .nav-link { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-icon">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+    </div>
+    <span class="nav-brand">SignApp</span>
+  </a>
+  <div class="nav-actions">
+    <a href="{% url 'login' %}" class="nav-link">Iniciar sesión</a>
+    <a href="{% url 'register' %}" class="btn-primary">Comenzar gratis</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">
+      <div class="badge-dot"></div>
+      <span class="badge-text">Firma digital válida y legalmente reconocida</span>
+    </div>
+    <h1>Firma documentos PDF de forma <em>segura y legal</em> en segundos</h1>
+    <p class="hero-desc">Usa tu certificado digital .p12 para firmar PDFs con validez legal. Sin instalar nada. Desde el navegador. Tu certificado nunca se almacena.</p>
+    <div class="hero-cta">
+      <a href="{% url 'register' %}" class="btn-hero-primary">
+        Firmar mi primer documento
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      </a>
+      <a href="{% url 'login' %}" class="btn-hero-secondary">Ver demo</a>
+    </div>
+    <div class="hero-trust">
+      <div class="trust-item">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        Sin instalación
+      </div>
+      <div class="trust-item">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        100% seguro
+      </div>
+      <div class="trust-item">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        Gratis para empezar
+      </div>
+    </div>
+  </div>
+
+  <!-- Mockup visual -->
+  <div class="hero-visual">
+    <div style="position:relative; display:inline-block; width:100%;">
+      <div class="mockup-card">
+        <div class="mockup-dots">
+          <div class="mockup-dot" style="background:#ff5f57"></div>
+          <div class="mockup-dot" style="background:#ffbd2e"></div>
+          <div class="mockup-dot" style="background:#28c840"></div>
+        </div>
+        <div class="mockup-window">
+          <div class="mockup-toolbar">
+            <svg class="mockup-toolbar-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            <span class="mockup-toolbar-text">contrato_final.pdf</span>
+            <span style="margin-left:auto; font-size:0.65rem; color:#4ade80; font-weight:600;">● Listo para firmar</span>
+          </div>
+          <div class="mockup-doc">
+            <div class="mockup-line" style="background:rgba(96,165,250,0.35); width:75%"></div>
+            <div class="mockup-line" style="background:rgba(255,255,255,0.1); width:100%"></div>
+            <div class="mockup-line" style="background:rgba(255,255,255,0.1); width:90%"></div>
+            <div class="mockup-line" style="background:rgba(255,255,255,0.08); width:60%"></div>
+          </div>
+          <div class="mockup-signature-area">
+            <div class="mockup-sig-icon">
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#60a5fa"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+            </div>
+            <p class="mockup-sig-label">Firma colocada · Página 1</p>
+          </div>
+          <div class="mockup-doc" style="margin-top:0; margin-bottom:0;">
+            <div class="mockup-line" style="background:rgba(255,255,255,0.08); width:100%"></div>
+            <div class="mockup-line" style="background:rgba(255,255,255,0.07); width:80%"></div>
+          </div>
+          <div class="mockup-footer">
+            <div class="mockup-status">
+              <div class="mockup-status-dot"></div>
+              Documento firmado
+            </div>
+            <span style="font-size:0.68rem; color:rgba(147,197,253,0.4); font-weight:500;">PAdES · SHA-256</span>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-badge">✓ PAdES válido</div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features">
+  <div class="features-header">
+    <div class="section-label">Beneficios</div>
+    <h2 class="section-title">Todo lo que necesitas para<br>firmar con confianza</h2>
+    <p class="section-subtitle" style="text-align:center; margin:0 auto;">Diseñado para profesionales, abogados y empresas que necesitan firmar documentos digitales con validez legal.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card blue">
+      <div class="feature-icon icon-blue">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      </div>
+      <p class="feature-title">Firma digitalmente válida</p>
+      <p class="feature-desc">Cumple con estándares PAdES/CAdES reconocidos legalmente. Compatible con Adobe Acrobat.</p>
+    </div>
+    <div class="feature-card purple">
+      <div class="feature-icon icon-purple">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+      </div>
+      <p class="feature-title">Certificados .p12 seguros</p>
+      <p class="feature-desc">Tu certificado se usa solo en el momento de la firma y nunca se guarda en nuestros servidores.</p>
+    </div>
+    <div class="feature-card green">
+      <div class="feature-icon icon-green">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      </div>
+      <p class="feature-title">Rápido y sin instalar</p>
+      <p class="feature-desc">Funciona directamente desde el navegador. No necesitas instalar software ni plugins.</p>
+    </div>
+    <div class="feature-card amber">
+      <div class="feature-icon icon-amber">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5"/></svg>
+      </div>
+      <p class="feature-title">Posición visual elegible</p>
+      <p class="feature-desc">Haz clic en el PDF para elegir exactamente dónde aparecerá tu firma visible con QR.</p>
+    </div>
+  </div>
+</section>
+
+<!-- STEPS -->
+<section class="steps">
+  <div class="steps-inner">
+    <div class="steps-header">
+      <div class="section-label">Cómo funciona</div>
+      <h2 class="section-title">Firmar en 4 pasos simples</h2>
+      <p class="section-subtitle" style="margin:0 auto; text-align:center;">Sin complicaciones. En menos de un minuto.</p>
+    </div>
+    <div class="steps-list">
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <p class="step-title">Sube tu documento PDF</p>
+          <p class="step-desc">Arrastra o selecciona el PDF que necesitas firmar. Lo almacenamos de forma segura en tu cuenta.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <p class="step-title">Carga tu certificado digital</p>
+          <p class="step-desc">Sube tu archivo .p12 e ingresa tu contraseña. La credencial se procesa en memoria y se elimina al instante.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <p class="step-title">Selecciona dónde firmar</p>
+          <p class="step-desc">Visualiza el documento y haz clic en la posición exacta donde quieres colocar la firma visible con código QR.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <p class="step-title">Descarga tu PDF firmado</p>
+          <p class="step-desc">En segundos obtienes el documento firmado digitalmente, listo para compartir y verificar en Adobe o FirmaEC.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECURITY -->
+<section class="security">
+  <div class="security-inner">
+    <div class="security-header">
+      <div class="section-label" style="color:var(--blue-400); justify-content:center;">
+        <span style="width:20px;height:2px;background:var(--blue-400);border-radius:1px;"></span>
+        Seguridad
+      </div>
+      <h2 class="section-title light" style="text-align:center;">Tu privacidad es nuestra prioridad</h2>
+      <p class="section-subtitle light" style="text-align:center; margin:0 auto;">Construido con las mejores prácticas de seguridad desde el primer día.</p>
+    </div>
+    <div class="security-grid">
+      <div class="security-card">
+        <div class="security-icon sicon-blue">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+        </div>
+        <p class="security-title">Certificados no almacenados</p>
+        <p class="security-desc">Tu .p12 y contraseña se usan exclusivamente durante la firma y se eliminan inmediatamente después.</p>
+      </div>
+      <div class="security-card">
+        <div class="security-icon sicon-green">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <p class="security-title">Criptografía de nivel empresarial</p>
+        <p class="security-desc">Usamos pyHanko con PKCS#12, RSA y SHA-256. El mismo estándar que usan bancos y entidades gubernamentales.</p>
+      </div>
+      <div class="security-card">
+        <div class="security-icon sicon-purple">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+        </div>
+        <p class="security-title">Sesiones seguras</p>
+        <p class="security-desc">Protección anti-caché OWASP, cookies HTTPOnly y timeout automático de sesión para máxima seguridad.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <div class="cta-inner">
+    <span class="cta-eyebrow">Empieza hoy</span>
+    <h2>¿Listo para firmar tu primer documento?</h2>
+    <p>Crea tu cuenta gratis y firma con tu certificado digital en menos de 2 minutos.</p>
+    <a href="{% url 'register' %}" class="btn-cta">
+      Crear cuenta gratuita
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+    </a>
+    <div class="cta-note">
+      <span>
+        <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        Sin tarjeta de crédito
+      </span>
+      <span>
+        <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        Sin instalación
+      </span>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">
+    <div class="footer-logo-icon">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+    </div>
+    <span class="footer-brand">SignApp Enterprise</span>
+  </div>
+  <p class="footer-copy">© 2026 SignApp Enterprise. Todos los derechos reservados.</p>
+  <div class="footer-links">
+    <a href="{% url 'login' %}">Ingresar</a>
+    <a href="{% url 'register' %}">Registrarse</a>
+  </div>
+</footer>
+
+</body>
+</html>
