@@ -14,5 +14,12 @@ class Document(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     signed_at = models.DateTimeField(null=True, blank=True)
     
+    # Coordenadas de firma
+    signature_page = models.IntegerField(null=True, blank=True)
+    signature_x = models.FloatField(null=True, blank=True)
+    signature_y = models.FloatField(null=True, blank=True)
+    signature_width = models.FloatField(null=True, blank=True)
+    signature_height = models.FloatField(null=True, blank=True)
+    
     def __str__(self):
         return f"Documento {self.id} de {self.user.username} ({self.status})"

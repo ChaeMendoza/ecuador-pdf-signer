@@ -41,7 +41,13 @@ def document_sign(request, pk):
             input_pdf_path = document.original_file.path
             
             try:
-                signed_pdf_path = sign_pdf_service(input_pdf_path, p12_content, password)
+                page = form.cleaned_data['page']
+                x = form.cleaned_data['x']
+                y = form.cleaned_data['y']
+                width = form.cleaned_data['width']
+                height = form.cleaned_data['height']
+                
+                signed_pdf_path = sign_pdf_service(input_pdf_path, p12_content, password, page, x, y, width, height)
                 
                 with open(signed_pdf_path, 'rb') as f:
                     file_name = os.path.basename(document.original_file.name)
@@ -50,6 +56,11 @@ def document_sign(request, pk):
                 
                 document.status = 'signed'
                 document.signed_at = timezone.now()
+                document.signature_page = page
+                document.signature_x = x
+                document.signature_y = y
+                document.signature_width = width
+                document.signature_height = height
                 document.save()
                 
                 # Cleanup temp file

@@ -6,7 +6,7 @@ from pyhanko.sign.fields import SigFieldSpec, append_signature_field
 from pyhanko.sign.signers.pdf_signer import PdfSigner, PdfSignatureMetadata
 from pyhanko.stamp import text
 
-def sign_pdf_service(input_pdf_path, p12_content, password):
+def sign_pdf_service(input_pdf_path, p12_content, password, page=1, x=50, y=50, width=200, height=50):
     """
     Firma un PDF usando un certificado .p12.
     Retorna la ruta del archivo PDF firmado temporal.
@@ -24,8 +24,9 @@ def sign_pdf_service(input_pdf_path, p12_content, password):
         
         with open(input_pdf_path, 'rb') as doc:
             w = IncrementalPdfFileWriter(doc)
-            # Asignamos una posición visible en la página (x1, y1, x2, y2)
-            append_signature_field(w, SigFieldSpec('FirmaDigital', box=(50, 50, 300, 100)))
+            # Asignamos una posición visible en la página (x1, y1, x2, y2) y en la página correcta (0-indexed)
+            box_coords = (x, y, x + width, y + height)
+            append_signature_field(w, SigFieldSpec('FirmaDigital', box=box_coords, on_page=page - 1))
             
             # Configuramos un estilo de estampa visible
             stamp_style = text.TextStampStyle(
