@@ -1,11 +1,44 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Iniciar Sesión</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn">Entrar</button>
-</form>
-<p>¿No tienes cuenta? <a href="{% url 'register' %}">Regístrate aquí</a>.</p>
+<div class="min-h-[calc(100vh-200px)] flex items-center justify-center py-12">
+    <div class="max-w-md w-full">
+        <!-- Card -->
+        <div class="card p-8">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg mb-4" style="background-color:#2563eb">
+                    <svg class="h-7 w-7 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900">Iniciar Sesión</h2>
+                <p class="mt-1 text-sm text-gray-500">Accede a la plataforma de firma institucional</p>
+            </div>
+            <!-- Form -->
+            <form method="post" class="space-y-1">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div>
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                <div class="pt-4">
+                    <button type="submit" class="btn-primary w-full py-2.5 text-base">
+                        Entrar
+                    </button>
+                </div>
+            </form>
+            <!-- Footer link -->
+            <p class="mt-6 text-center text-sm text-gray-500">
+                ¿No tienes cuenta?
+                <a href="{% url 'register' %}" class="font-semibold text-primary-600 hover:text-primary-500 transition-colors">Regístrate aquí</a>
+            </p>
+        </div>
+    </div>
+</div>
 {% endblock %}

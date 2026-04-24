@@ -1,11 +1,45 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Registro de Usuario</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn">Registrarse</button>
-</form>
-<p>¿Ya tienes cuenta? <a href="{% url 'login' %}">Inicia sesión aquí</a>.</p>
+<div class="min-h-[calc(100vh-200px)] flex items-center justify-center py-12">
+    <div class="max-w-md w-full">
+        <div class="card p-8">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg mb-4" style="background-color:#2563eb">
+                    <svg class="h-7 w-7 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900">Crear Cuenta</h2>
+                <p class="mt-1 text-sm text-gray-500">Regístrate para comenzar a firmar documentos</p>
+            </div>
+            <!-- Form -->
+            <form method="post" class="space-y-1">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div>
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                            <span class="helptext">{{ field.help_text }}</span>
+                        {% endif %}
+                        {% if field.errors %}
+                            <ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                <div class="pt-4">
+                    <button type="submit" class="btn-primary w-full py-2.5 text-base">
+                        Crear cuenta
+                    </button>
+                </div>
+            </form>
+            <p class="mt-6 text-center text-sm text-gray-500">
+                ¿Ya tienes cuenta?
+                <a href="{% url 'login' %}" class="font-semibold text-primary-600 hover:text-primary-500 transition-colors">Inicia sesión aquí</a>
+            </p>
+        </div>
+    </div>
+</div>
 {% endblock %}

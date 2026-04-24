@@ -1,11 +1,80 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Subir Documento PDF</h2>
-<form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn">Subir Documento</button>
-    <a href="{% url 'document_list' %}" class="btn btn-danger">Cancelar</a>
-</form>
+<div class="max-w-xl mx-auto">
+    <!-- Page Header -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Subir Documento PDF</h1>
+        <p class="mt-1 text-sm text-gray-500">Selecciona el archivo PDF que deseas firmar digitalmente</p>
+    </div>
+
+    <!-- Upload Card -->
+    <div class="card p-8">
+        <form method="post" enctype="multipart/form-data" class="space-y-6" id="upload-form">
+            {% csrf_token %}
+            <div>
+                <label for="{{ form.original_file.id_for_label }}">{{ form.original_file.label }}</label>
+                <!-- Custom file drop zone -->
+                <div class="mt-2 flex justify-center rounded-xl border-2 border-dashed border-gray-300 px-6 pt-5 pb-6 hover:border-primary-400 transition-colors duration-200 cursor-pointer" id="drop-zone">
+                    <div class="space-y-2 text-center">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <div class="text-sm text-gray-600">
+                            <label for="{{ form.original_file.id_for_label }}" class="relative cursor-pointer rounded-md font-semibold text-primary-600 hover:text-primary-500">
+                                <span>Selecciona un archivo</span>
+                                {{ form.original_file }}
+                            </label>
+                            <p class="pl-1 inline"> o arrástralo aquí</p>
+                        </div>
+                        <p class="text-xs text-gray-500">Solo archivos PDF</p>
+                        <p id="file-name-display" class="text-sm font-medium text-primary-600 hidden"></p>
+                    </div>
+                </div>
+                {% if form.original_file.errors %}
+                    <ul class="errorlist mt-2">{% for e in form.original_file.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+                <button type="submit" class="btn-primary flex-1 py-2.5" id="submit-btn">
+                    <svg class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <span>Subir Documento</span>
+                </button>
+                <a href="{% url 'document_list' %}" class="btn-secondary flex-1 py-2.5 text-center">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // File name display
+    const fileInput = document.getElementById('{{ form.original_file.id_for_label }}');
+    const fileNameDisplay = document.getElementById('file-name-display');
+    const dropZone = document.getElementById('drop-zone');
+    
+    fileInput.classList.add('sr-only');
+    
+    fileInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            fileNameDisplay.textContent = this.files[0].name;
+            fileNameDisplay.classList.remove('hidden');
+            dropZone.classList.add('border-primary-400', 'bg-primary-50');
+        }
+    });
+    
+    // Loading state on submit
+    document.getElementById('upload-form').addEventListener('submit', function() {
+        const btn = document.getElementById('submit-btn');
+        btn.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Subiendo...`;
+        btn.disabled = true;
+    });
+</script>
 {% endblock %}

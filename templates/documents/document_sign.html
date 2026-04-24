@@ -1,91 +1,113 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<style>
-    .sign-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-        align-items: flex-start;
-        margin-top: 20px;
-    }
-    .pdf-viewer-container {
-        border: 1px solid #ccc;
-        background: #f8f9fa;
-        padding: 10px;
-        position: relative;
-        flex: 1;
-        min-width: 400px;
-        overflow: auto;
-    }
-    .pdf-controls {
-        margin-bottom: 10px;
-        text-align: center;
-    }
-    #pdf-wrapper {
-        position: relative;
-        display: inline-block;
-        margin: 0 auto;
-    }
-    #pdf-render {
-        border: 1px solid #000;
-        cursor: crosshair;
-        display: block;
-    }
-    #signature-box {
-        position: absolute;
-        border: 2px dashed #004d99;
-        background: rgba(0, 77, 153, 0.2);
-        display: none;
-        pointer-events: none;
-        box-sizing: border-box;
-    }
-    #signature-box::after {
-        content: "Firma aquí";
-        color: #004d99;
-        font-weight: bold;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 14px;
-        opacity: 0.7;
-    }
-    .form-container {
-        flex: 0 0 300px;
-        background: white;
-        padding: 15px;
-        border-radius: 5px;
-        box-shadow: 0 0 5px rgba(0,0,0,0.1);
-    }
-</style>
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Firmar Documento</h1>
+    <p class="mt-1 text-sm text-gray-500">Ubica tu firma en el documento y luego carga tu certificado digital</p>
+</div>
 
-<h2>Firmar Documento: {{ document.original_file.name }}</h2>
+<!-- Instructions Banner -->
+<div class="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 flex gap-3">
+    <svg class="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+    </svg>
+    <div class="text-sm text-blue-800">
+        <p class="font-semibold mb-1">¿Cómo funciona?</p>
+        <ol class="list-decimal list-inside space-y-0.5 text-blue-700">
+            <li>Navega al PDF y <strong>haz clic</strong> donde quieras colocar tu firma</li>
+            <li>Verás un recuadro azul que muestra la posición seleccionada</li>
+            <li>Carga tu certificado <strong>.p12</strong> y escribe tu contraseña</li>
+            <li>Presiona <strong>"Firmar Documento"</strong></li>
+        </ol>
+        <p class="mt-2 text-xs text-blue-600">🔒 Tu certificado y contraseña no se almacenan en ningún momento.</p>
+    </div>
+</div>
 
-<div class="sign-container">
-    <div class="form-container">
-        <h3>1. Ubica tu firma</h3>
-        <p style="font-size: 14px; color: #555;">Navega por el documento y haz clic en la página donde deseas colocar tu firma visible.</p>
-        
-        <h3>2. Certificado digital</h3>
-        <form method="post" enctype="multipart/form-data" id="sign-form">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit" class="btn" id="btn-submit" style="width: 100%; margin-top: 10px;">Firmar Documento</button>
-            <a href="{% url 'document_list' %}" class="btn btn-danger" style="width: 100%; margin-top: 10px; text-align: center; display: block; box-sizing: border-box;">Cancelar</a>
-        </form>
+<div class="flex flex-col xl:flex-row gap-6 items-start">
+    
+    <!-- Sidebar: Form -->
+    <div class="xl:w-80 w-full flex-shrink-0">
+        <div class="card p-6 sticky top-20">
+            <h2 class="text-base font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-100">Certificado Digital</h2>
+            <form method="post" enctype="multipart/form-data" id="sign-form" class="space-y-1">
+                {% csrf_token %}
+                
+                <!-- Visible Fields -->
+                <div>
+                    <label for="id_p12_file">{{ form.p12_file.label }}</label>
+                    <div class="mt-1">
+                        {{ form.p12_file }}
+                    </div>
+                    {% if form.p12_file.help_text %}<span class="helptext">{{ form.p12_file.help_text }}</span>{% endif %}
+                </div>
+                <div>
+                    <label for="id_password">{{ form.password.label }}</label>
+                    {{ form.password }}
+                </div>
+                
+                <!-- Hidden coordinate fields -->
+                {{ form.page }}
+                {{ form.x }}
+                {{ form.y }}
+                {{ form.width }}
+                {{ form.height }}
+
+                <!-- Position indicator -->
+                <div class="mt-4 p-3 rounded-xl bg-gray-50 border border-gray-200" id="position-indicator">
+                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Posición de Firma</p>
+                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                        <span>Página: <strong id="info-page" class="text-gray-900">—</strong></span>
+                        <span>X: <strong id="info-x" class="text-gray-900">—</strong></span>
+                        <span>Y: <strong id="info-y" class="text-gray-900">—</strong></span>
+                        <span id="info-set" class="col-span-2 text-amber-600 font-medium">⚠ Haz clic en el PDF primero</span>
+                    </div>
+                </div>
+                
+                <div class="pt-4">
+                    <button type="submit" id="submit-btn" class="btn-primary w-full py-2.5">
+                        <svg class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                        </svg>
+                        Firmar Documento
+                    </button>
+                    <a href="{% url 'document_list' %}" class="btn-secondary w-full py-2.5 mt-2 text-center">Cancelar</a>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <div class="pdf-viewer-container">
-        <div class="pdf-controls">
-            <button type="button" class="btn" id="prev-page">Anterior</button>
-            <span style="margin: 0 15px; font-weight: bold;">Página: <span id="page-num"></span> / <span id="page-count"></span></span>
-            <button type="button" class="btn" id="next-page">Siguiente</button>
-        </div>
-        <div style="text-align: center;">
-            <div id="pdf-wrapper">
-                <canvas id="pdf-render"></canvas>
-                <div id="signature-box"></div>
+    <!-- PDF Viewer -->
+    <div class="flex-1 min-w-0">
+        <div class="card overflow-hidden">
+            <!-- PDF Controls -->
+            <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <button type="button" id="prev-page" class="btn-secondary py-1.5 px-3 text-xs">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                    </button>
+                    <span class="text-sm font-medium text-gray-700">
+                        Página <span id="page-num" class="text-primary-600">1</span> de <span id="page-count">—</span>
+                    </span>
+                    <button type="button" id="next-page" class="btn-secondary py-1.5 px-3 text-xs">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+                <p class="text-xs text-gray-400">Haz clic en el documento para ubicar tu firma</p>
+            </div>
+            <!-- Canvas area -->
+            <div class="p-4 bg-gray-100 flex justify-center overflow-auto">
+                <div id="pdf-wrapper" class="relative inline-block shadow-xl">
+                    <canvas id="pdf-render" class="block"></canvas>
+                    <!-- Signature Preview Box -->
+                    <div id="signature-box"
+                         class="absolute hidden border-2 border-dashed border-primary-500 bg-primary-500/10 rounded pointer-events-none transition-all duration-100 flex items-center justify-center">
+                        <span class="text-primary-700 text-xs font-semibold bg-primary-50/80 px-2 py-0.5 rounded-full whitespace-nowrap">✍ Firma aquí</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -93,129 +115,93 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
-    // Configuración de pdf.js
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
     const url = '{{ document.original_file.url }}';
-    
-    let pdfDoc = null,
-        pageNum = 1,
-        pageIsRendering = false,
-        pageNumIsPending = null,
-        scale = 1.2,
-        canvas = document.getElementById('pdf-render'),
-        ctx = canvas.getContext('2d'),
-        signatureBox = document.getElementById('signature-box');
-
-    // Dimensiones en puntos PDF (1pt = 1/72 inch)
+    let pdfDoc = null, pageNum = 1, pageIsRendering = false, pageNumIsPending = null;
+    const scale = 1.4;
+    const canvas = document.getElementById('pdf-render');
+    const ctx = canvas.getContext('2d');
+    const signatureBox = document.getElementById('signature-box');
     const SIGNATURE_WIDTH_PT = 200;
     const SIGNATURE_HEIGHT_PT = 50;
+    let signaturePlaced = false;
 
     const renderPage = num => {
         pageIsRendering = true;
-
         pdfDoc.getPage(num).then(page => {
             const viewport = page.getViewport({ scale });
             canvas.height = viewport.height;
             canvas.width = viewport.width;
-
-            const renderCtx = {
-                canvasContext: ctx,
-                viewport: viewport
-            };
-
-            page.render(renderCtx).promise.then(() => {
+            page.render({ canvasContext: ctx, viewport }).promise.then(() => {
                 pageIsRendering = false;
-
                 if (pageNumIsPending !== null) {
                     renderPage(pageNumIsPending);
                     pageNumIsPending = null;
                 }
             });
-
             document.getElementById('page-num').textContent = num;
-            
-            // Ocultar caja si cambiamos de página y la firma no está aquí
-            const savedPage = document.getElementById('id_page').value;
-            if (parseInt(savedPage) !== num) {
-                signatureBox.style.display = 'none';
-            } else {
-                signatureBox.style.display = 'block';
-            }
+            const savedPage = parseInt(document.getElementById('id_page').value);
+            signatureBox.classList.toggle('hidden', savedPage !== num);
         });
     };
 
-    const queueRenderPage = num => {
-        if (pageIsRendering) {
-            pageNumIsPending = num;
-        } else {
-            renderPage(num);
-        }
-    };
+    const queueRender = num => pageIsRendering ? (pageNumIsPending = num) : renderPage(num);
 
-    const showPrevPage = () => {
-        if (pageNum <= 1) return;
-        pageNum--;
-        queueRenderPage(pageNum);
-    };
-
-    const showNextPage = () => {
-        if (pageNum >= pdfDoc.numPages) return;
-        pageNum++;
-        queueRenderPage(pageNum);
-    };
-
-    pdfjsLib.getDocument(url).promise.then(pdfDoc_ => {
-        pdfDoc = pdfDoc_;
-        document.getElementById('page-count').textContent = pdfDoc.numPages;
+    pdfjsLib.getDocument(url).promise.then(doc => {
+        pdfDoc = doc;
+        document.getElementById('page-count').textContent = doc.numPages;
         renderPage(pageNum);
-    }).catch(err => {
-        console.error('Error cargando el PDF: ', err);
     });
 
-    document.getElementById('prev-page').addEventListener('click', showPrevPage);
-    document.getElementById('next-page').addEventListener('click', showNextPage);
+    document.getElementById('prev-page').addEventListener('click', () => { if (pageNum > 1) queueRender(--pageNum); });
+    document.getElementById('next-page').addEventListener('click', () => { if (pageNum < pdfDoc.numPages) queueRender(++pageNum); });
 
-    // Seleccionar posición de la firma al hacer clic en el canvas
-    canvas.addEventListener('click', (e) => {
+    canvas.addEventListener('click', e => {
         const rect = canvas.getBoundingClientRect();
-        
-        // Coordenadas relativas al canvas (esquina superior izquierda)
         const clickX = e.clientX - rect.left;
         const clickY = e.clientY - rect.top;
+        const boxW = SIGNATURE_WIDTH_PT * scale;
+        const boxH = SIGNATURE_HEIGHT_PT * scale;
+        let bx = Math.min(clickX, canvas.width - boxW);
+        let by = Math.min(clickY, canvas.height - boxH);
+        bx = Math.max(0, bx);
+        by = Math.max(0, by);
 
-        // Tamaño visual de la caja
-        const boxWidth = SIGNATURE_WIDTH_PT * scale;
-        const boxHeight = SIGNATURE_HEIGHT_PT * scale;
+        signatureBox.style.width  = boxW + 'px';
+        signatureBox.style.height = boxH + 'px';
+        signatureBox.style.left   = bx + 'px';
+        signatureBox.style.top    = by + 'px';
+        signatureBox.classList.remove('hidden');
 
-        // Ajustar posición para que la caja no se salga del canvas
-        let boxX = clickX;
-        let boxY = clickY;
+        const pdf_x = bx / scale;
+        const pdf_y_bottom = (canvas.height / scale) - (by / scale) - SIGNATURE_HEIGHT_PT;
 
-        if (boxX + boxWidth > canvas.width) boxX = canvas.width - boxWidth;
-        if (boxY + boxHeight > canvas.height) boxY = canvas.height - boxHeight;
-
-        // Mostrar la caja en el navegador
-        signatureBox.style.width = boxWidth + 'px';
-        signatureBox.style.height = boxHeight + 'px';
-        signatureBox.style.left = boxX + 'px';
-        signatureBox.style.top = boxY + 'px';
-        signatureBox.style.display = 'block';
-
-        // Convertir a coordenadas PDF (origen en esquina inferior izquierda, tamaño original sin escala)
-        const pdf_x = boxX / scale;
-        const pdf_y_top = boxY / scale;
-        const pdf_viewport_height = canvas.height / scale;
-        
-        // Y en PDF es la esquina inferior izquierda de la caja
-        const pdf_y_bottom = pdf_viewport_height - pdf_y_top - SIGNATURE_HEIGHT_PT;
-
-        // Asignar los valores a los inputs ocultos del formulario
-        document.getElementById('id_page').value = pageNum;
-        document.getElementById('id_x').value = pdf_x.toFixed(2);
-        document.getElementById('id_y').value = pdf_y_bottom.toFixed(2);
-        document.getElementById('id_width').value = SIGNATURE_WIDTH_PT;
+        document.getElementById('id_page').value   = pageNum;
+        document.getElementById('id_x').value      = pdf_x.toFixed(2);
+        document.getElementById('id_y').value      = pdf_y_bottom.toFixed(2);
+        document.getElementById('id_width').value  = SIGNATURE_WIDTH_PT;
         document.getElementById('id_height').value = SIGNATURE_HEIGHT_PT;
+
+        // Update info panel
+        document.getElementById('info-page').textContent = pageNum;
+        document.getElementById('info-x').textContent    = pdf_x.toFixed(0) + ' pt';
+        document.getElementById('info-y').textContent    = pdf_y_bottom.toFixed(0) + ' pt';
+        document.getElementById('info-set').textContent  = '✅ Posición seleccionada';
+        document.getElementById('info-set').className    = 'col-span-2 text-emerald-600 font-medium';
+        signaturePlaced = true;
+    });
+
+    // Loading state
+    document.getElementById('sign-form').addEventListener('submit', function(e) {
+        const btn = document.getElementById('submit-btn');
+        btn.innerHTML = `
+            <svg class="animate-spin mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Firmando PDF...`;
+        btn.disabled = true;
     });
 </script>
 {% endblock %}
