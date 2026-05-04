@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Firma Masiva de Documentos</h1>
+    <p class="mt-1 text-sm text-gray-500">Firma múltiples documentos PDF con la misma posición de firma</p>
+</div>
+
+<!-- Instructions Banner -->
+<div class="mb-6 rounded-xl border border-green-200 bg-green-50 p-4 flex gap-3">
+    <svg class="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+    </svg>
+    <div class="text-sm text-green-800">
+        <p class="font-semibold mb-1">Proceso de Firma Masiva</p>
+        <ol class="list-decimal list-inside space-y-0.5 text-green-700">
+            <li>Selecciona múltiples archivos PDF para firmar</li>
+            <li>Define la posición de la firma (página y coordenadas)</li>
+            <li>Carga tu certificado <strong>.p12</strong> y escribe tu contraseña</li>
+            <li>Presiona <strong>"Firmar Documentos"</strong> para descargar un ZIP con todos los firmados</li>
+        </ol>
+        <p class="mt-2 text-xs text-green-600">🔒 Tu certificado y contraseña no se almacenan. Límite: 100 documentos.</p>
+    </div>
+</div>
+
+<div class="max-w-2xl">
+    <div class="card p-6">
+        <h2 class="text-base font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-100">Configuración de Firma Masiva</h2>
+        <form method="post" enctype="multipart/form-data" class="space-y-4">
+            {% csrf_token %}
+            
+            <div>
+                <label for="id_documents">{{ form.documents.label }}</label>
+                <div class="mt-1">
+                    {{ form.documents }}
+                </div>
+                {% if form.documents.help_text %}<span class="helptext">{{ form.documents.help_text }}</span>{% endif %}
+                {% if form.documents.errors %}<div class="text-red-500 text-sm">{{ form.documents.errors }}</div>{% endif %}
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="id_page">{{ form.page.label }}</label>
+                    {{ form.page }}
+                    {% if form.page.errors %}<div class="text-red-500 text-sm">{{ form.page.errors }}</div>{% endif %}
+                </div>
+                <div>
+                    <label for="id_x">{{ form.x.label }}</label>
+                    {{ form.x }}
+                    {% if form.x.errors %}<div class="text-red-500 text-sm">{{ form.x.errors }}</div>{% endif %}
+                </div>
+                <div>
+                    <label for="id_y">{{ form.y.label }}</label>
+                    {{ form.y }}
+                    {% if form.y.errors %}<div class="text-red-500 text-sm">{{ form.y.errors }}</div>{% endif %}
+                </div>
+                <div>
+                    <label for="id_width">{{ form.width.label }}</label>
+                    {{ form.width }}
+                    {% if form.width.errors %}<div class="text-red-500 text-sm">{{ form.width.errors }}</div>{% endif %}
+                </div>
+            </div>
+            
+            <div>
+                <label for="id_height">{{ form.height.label }}</label>
+                {{ form.height }}
+                {% if form.height.errors %}<div class="text-red-500 text-sm">{{ form.height.errors }}</div>{% endif %}
+            </div>
+            
+            <div>
+                <label for="id_p12_file">{{ form.p12_file.label }}</label>
+                <div class="mt-1">
+                    {{ form.p12_file }}
+                </div>
+                {% if form.p12_file.help_text %}<span class="helptext">{{ form.p12_file.help_text }}</span>{% endif %}
+                {% if form.p12_file.errors %}<div class="text-red-500 text-sm">{{ form.p12_file.errors }}</div>{% endif %}
+            </div>
+            
+            <div>
+                <label for="id_password">{{ form.password.label }}</label>
+                {{ form.password }}
+                {% if form.password.errors %}<div class="text-red-500 text-sm">{{ form.password.errors }}</div>{% endif %}
+            </div>
+            
+            <button type="submit" class="btn-primary w-full">
+                Firmar Documentos
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

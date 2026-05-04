@@ -6,18 +6,20 @@ from datetime import datetime, timezone
 from cryptography.hazmat.primitives.serialization.pkcs12 import load_key_and_certificates
 from cryptography.x509.oid import NameOID
 
-from pyhanko.sign import signers
-from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
-from pyhanko.pdf_utils.images import PdfImage
-from pyhanko.pdf_utils.layout import BoxConstraints
-from pyhanko.sign.fields import SigFieldSpec, append_signature_field
-from pyhanko.sign.signers.pdf_signer import PdfSigner, PdfSignatureMetadata
-from pyhanko.stamp.text import TextStampStyle
+from pyhanko.pdf_utils.reader import PdfFileReader
 
 from .stamp import generate_signature_stamp
 
 
-def _extract_cn_from_p12(p12_bytes: bytes, password: str) -> str:
+def get_pdf_page_size(pdf_path: str, page: int = 1) -> tuple:
+    """Obtiene el ancho y alto de una página PDF en puntos."""
+    with open(pdf_path, 'rb') as f:
+        reader = PdfFileReader(f)
+        page_obj = reader.get_page(page - 1)
+        box = page_obj.mediabox
+        width = float(box[2] - box[0])
+        height = float(box[3] - box[1])
+        return width, height
     """Extrae el Common Name (CN) del certificado dentro del .p12."""
     try:
         private_key, certificate, _ = load_key_and_certificates(

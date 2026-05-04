@@ -5,4 +5,5 @@ urlpatterns = [
     path('', views.document_list, name='document_list'),
     path('upload/', views.document_upload, name='document_upload'),
     path('<int:pk>/sign/', views.document_sign, name='document_sign'),
+    path('batch-sign/', views.batch_sign, name='batch_sign'),
 ]

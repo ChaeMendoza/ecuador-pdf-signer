@@ -7,12 +7,20 @@
         <h1 class="text-2xl font-bold text-gray-900">Mis Documentos</h1>
         <p class="mt-1 text-sm text-gray-500">Gestiona y firma tus documentos PDF</p>
     </div>
-    <a href="{% url 'document_upload' %}" class="btn-primary">
-        <svg class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Subir Documento
-    </a>
+    <div class="flex gap-3">
+        <a href="{% url 'document_upload' %}" class="btn-secondary">
+            <svg class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Subir Documento
+        </a>
+        <a href="{% url 'batch_sign' %}" class="btn-primary">
+            <svg class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Firma Masiva
+        </a>
+    </div>
 </div>
 
 <!-- Stats Cards -->

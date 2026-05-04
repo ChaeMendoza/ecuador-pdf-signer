@@ -17,6 +17,11 @@ Un sistema web simple y moderno desarrollado en **Django** para la firma digital
     *   Firma de documentos PDF utilizando certificados `.p12` cargados al vuelo.
     *   Sello visible de validación inyectado en el archivo firmado.
     *   Procesamiento 100% en memoria/temporal (el certificado se destruye inmediatamente tras generar la firma).
+4.  **Firma Masiva:** 
+    *   Firma múltiples documentos PDF con la misma posición de firma.
+    *   Validación de dimensiones similares entre documentos.
+    *   Descarga de todos los documentos firmados en un archivo ZIP.
+    *   Límite de 100 documentos por lote.
 
 ## 🛠️ Requisitos Previos
 
