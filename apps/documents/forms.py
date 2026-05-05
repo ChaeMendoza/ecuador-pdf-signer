@@ -1,6 +1,9 @@
 from django import forms
 from .models import Document
 
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
 class DocumentForm(forms.ModelForm):
     class Meta:
         model = Document
@@ -22,9 +25,10 @@ class SignDocumentForm(forms.Form):
 
 class BatchSignForm(forms.Form):
     documents = forms.FileField(
-        widget=forms.ClearableFileInput(attrs={'multiple': True}),
+        widget=MultipleFileInput(),
         label='Documentos PDF',
-        help_text='Selecciona múltiples archivos PDF para firmar.'
+        help_text='Selecciona múltiples archivos PDF para firmar.',
+        required=False
     )
     p12_file = forms.FileField(label='Certificado (.p12 o .pfx)', help_text='Sube tu archivo de firma electrónica.')
     password = forms.CharField(widget=forms.PasswordInput, label='Contraseña del certificado')
