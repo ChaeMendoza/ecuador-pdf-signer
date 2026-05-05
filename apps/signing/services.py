@@ -7,6 +7,13 @@ from cryptography.hazmat.primitives.serialization.pkcs12 import load_key_and_cer
 from cryptography.x509.oid import NameOID
 
 from pyhanko.pdf_utils.reader import PdfFileReader
+from pyhanko.sign import signers
+from pyhanko.stamp import TextStampStyle
+from pyhanko.pdf_utils.images import PdfImage
+from pyhanko.pdf_utils.layout import BoxConstraints
+from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
+from pyhanko.sign.fields import append_signature_field, SigFieldSpec
+from pyhanko.sign.signers.pdf_signer import PdfSigner, PdfSignatureMetadata
 
 from .stamp import generate_signature_stamp
 
@@ -20,6 +27,9 @@ def get_pdf_page_size(pdf_path: str, page: int = 1) -> tuple:
         width = float(box[2] - box[0])
         height = float(box[3] - box[1])
         return width, height
+
+
+def _extract_cn_from_p12(p12_bytes: bytes, password: str) -> str:
     """Extrae el Common Name (CN) del certificado dentro del .p12."""
     try:
         private_key, certificate, _ = load_key_and_certificates(

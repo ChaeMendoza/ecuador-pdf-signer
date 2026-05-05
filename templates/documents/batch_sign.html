@@ -23,67 +23,84 @@
     </div>
 </div>
 
-<div class="max-w-2xl">
+<div class="max-w-4xl">
     <div class="card p-6">
         <h2 class="text-base font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-100">Configuración de Firma Masiva</h2>
-        <form method="post" enctype="multipart/form-data" class="space-y-4">
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
             {% csrf_token %}
             
+            <!-- Documentos -->
             <div>
-                <label for="id_documents">{{ form.documents.label }}</label>
+                <label for="id_documents" class="block text-sm font-medium text-gray-900 mb-2">{{ form.documents.label }}</label>
                 <div class="mt-1">
                     {{ form.documents }}
                 </div>
-                {% if form.documents.help_text %}<span class="helptext">{{ form.documents.help_text }}</span>{% endif %}
-                {% if form.documents.errors %}<div class="text-red-500 text-sm">{{ form.documents.errors }}</div>{% endif %}
+                {% if form.documents.help_text %}<p class="mt-1 text-sm text-gray-500">{{ form.documents.help_text }}</p>{% endif %}
+                {% if form.documents.errors %}<div class="text-red-500 text-sm mt-1">{{ form.documents.errors }}</div>{% endif %}
             </div>
-            
-            <div class="grid grid-cols-2 gap-4">
+
+            <!-- Signature Positioning and Sizing -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 rounded-lg bg-blue-50 border border-blue-200">
                 <div>
-                    <label for="id_page">{{ form.page.label }}</label>
-                    {{ form.page }}
-                    {% if form.page.errors %}<div class="text-red-500 text-sm">{{ form.page.errors }}</div>{% endif %}
+                    <h3 class="text-sm font-semibold text-gray-900 mb-4">Posición de Firma</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label for="id_page" class="block text-xs font-medium text-gray-700 mb-1">{{ form.page.label }}</label>
+                            {{ form.page }}
+                        </div>
+                        <div>
+                            <label for="id_x" class="block text-xs font-medium text-gray-700 mb-1">{{ form.x.label }}</label>
+                            {{ form.x }}
+                        </div>
+                        <div>
+                            <label for="id_y" class="block text-xs font-medium text-gray-700 mb-1">{{ form.y.label }}</label>
+                            {{ form.y }}
+                        </div>
+                    </div>
                 </div>
+
                 <div>
-                    <label for="id_x">{{ form.x.label }}</label>
-                    {{ form.x }}
-                    {% if form.x.errors %}<div class="text-red-500 text-sm">{{ form.x.errors }}</div>{% endif %}
+                    <h3 class="text-sm font-semibold text-gray-900 mb-4">Tamaño de Firma</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label for="id_width" class="block text-xs font-medium text-gray-700 mb-1">{{ form.width.label }}</label>
+                            {{ form.width }}
+                        </div>
+                        <div>
+                            <label for="id_height" class="block text-xs font-medium text-gray-700 mb-1">{{ form.height.label }}</label>
+                            {{ form.height }}
+                        </div>
+                        <div class="pt-2 text-xs text-blue-700 bg-blue-100 p-2 rounded">
+                            <p class="font-medium mb-1">💡 Consejo:</p>
+                            <p>Ajusta el tamaño para que se adapte a los espacios de firma en tus documentos.</p>
+                        </div>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Certificado -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label for="id_y">{{ form.y.label }}</label>
-                    {{ form.y }}
-                    {% if form.y.errors %}<div class="text-red-500 text-sm">{{ form.y.errors }}</div>{% endif %}
+                    <label for="id_p12_file" class="block text-sm font-medium text-gray-900 mb-2">{{ form.p12_file.label }}</label>
+                    <div class="mt-1">
+                        {{ form.p12_file }}
+                    </div>
+                    {% if form.p12_file.help_text %}<p class="mt-1 text-sm text-gray-500">{{ form.p12_file.help_text }}</p>{% endif %}
+                    {% if form.p12_file.errors %}<div class="text-red-500 text-sm mt-1">{{ form.p12_file.errors }}</div>{% endif %}
                 </div>
+
                 <div>
-                    <label for="id_width">{{ form.width.label }}</label>
-                    {{ form.width }}
-                    {% if form.width.errors %}<div class="text-red-500 text-sm">{{ form.width.errors }}</div>{% endif %}
+                    <label for="id_password" class="block text-sm font-medium text-gray-900 mb-2">{{ form.password.label }}</label>
+                    {{ form.password }}
+                    {% if form.password.errors %}<div class="text-red-500 text-sm mt-1">{{ form.password.errors }}</div>{% endif %}
                 </div>
             </div>
             
-            <div>
-                <label for="id_height">{{ form.height.label }}</label>
-                {{ form.height }}
-                {% if form.height.errors %}<div class="text-red-500 text-sm">{{ form.height.errors }}</div>{% endif %}
-            </div>
-            
-            <div>
-                <label for="id_p12_file">{{ form.p12_file.label }}</label>
-                <div class="mt-1">
-                    {{ form.p12_file }}
-                </div>
-                {% if form.p12_file.help_text %}<span class="helptext">{{ form.p12_file.help_text }}</span>{% endif %}
-                {% if form.p12_file.errors %}<div class="text-red-500 text-sm">{{ form.p12_file.errors }}</div>{% endif %}
-            </div>
-            
-            <div>
-                <label for="id_password">{{ form.password.label }}</label>
-                {{ form.password }}
-                {% if form.password.errors %}<div class="text-red-500 text-sm">{{ form.password.errors }}</div>{% endif %}
-            </div>
-            
-            <button type="submit" class="btn-primary w-full">
-                Firmar Documentos
+            <button type="submit" class="btn-primary w-full py-2.5">
+                <svg class="mr-2 h-4 w-4 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                Firmar Documentos y Descargar ZIP
             </button>
         </form>
     </div>

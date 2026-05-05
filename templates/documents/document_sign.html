@@ -55,11 +55,64 @@
                 <!-- Position indicator -->
                 <div class="mt-4 p-3 rounded-xl bg-gray-50 border border-gray-200" id="position-indicator">
                     <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Posición de Firma</p>
-                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 mb-4">
                         <span>Página: <strong id="info-page" class="text-gray-900">—</strong></span>
                         <span>X: <strong id="info-x" class="text-gray-900">—</strong></span>
                         <span>Y: <strong id="info-y" class="text-gray-900">—</strong></span>
                         <span id="info-set" class="col-span-2 text-amber-600 font-medium">⚠ Haz clic en el PDF primero</span>
+                    </div>
+                </div>
+
+                <!-- Size Controls -->
+                <div class="mt-4 p-3 rounded-xl bg-gray-50 border border-gray-200" id="size-controls" style="display:none;">
+                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Tamaño de Firma (pt)</p>
+                    <div class="space-y-3">
+                        <div>
+                            <label for="size-width-input" class="block text-xs font-medium text-gray-700 mb-1">
+                                Ancho
+                            </label>
+                            <div class="flex gap-2">
+                                <input 
+                                    type="number" 
+                                    id="size-width-input" 
+                                    min="50" 
+                                    max="400" 
+                                    step="5" 
+                                    class="flex-1 px-2 py-1.5 border border-gray-300 rounded text-sm"
+                                    placeholder="200">
+                                <span class="text-xs text-gray-500 flex items-center">pt</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="size-height-input" class="block text-xs font-medium text-gray-700 mb-1">
+                                Alto
+                            </label>
+                            <div class="flex gap-2">
+                                <input 
+                                    type="number" 
+                                    id="size-height-input" 
+                                    min="30" 
+                                    max="200" 
+                                    step="5" 
+                                    class="flex-1 px-2 py-1.5 border border-gray-300 rounded text-sm"
+                                    placeholder="50">
+                                <span class="text-xs text-gray-500 flex items-center">pt</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input 
+                                type="checkbox" 
+                                id="aspect-ratio-lock" 
+                                checked
+                                class="w-4 h-4 text-primary-600 border-gray-300 rounded">
+                            <label for="aspect-ratio-lock" class="text-xs text-gray-700">Mantener proporción</label>
+                        </div>
+                        <div class="text-xs text-gray-500 pt-2 border-t border-gray-200">
+                            <p class="font-medium text-gray-700 mb-1">Dimensiones:</p>
+                            <p>Página: <strong id="size-info-page">—</strong></p>
+                            <p>Ancho: <strong id="size-info-width">—</strong></p>
+                            <p>Alto: <strong id="size-info-height">—</strong></p>
+                        </div>
                     </div>
                 </div>
                 
@@ -102,10 +155,21 @@
             <div class="p-4 bg-gray-100 flex justify-center overflow-auto">
                 <div id="pdf-wrapper" class="relative inline-block shadow-xl">
                     <canvas id="pdf-render" class="block"></canvas>
-                    <!-- Signature Preview Box -->
+                    <!-- Signature Preview Box with Resize Handles -->
                     <div id="signature-box"
-                         class="absolute hidden border-2 border-dashed border-primary-500 bg-primary-500/10 rounded pointer-events-none transition-all duration-100 flex items-center justify-center">
-                        <span class="text-primary-700 text-xs font-semibold bg-primary-50/80 px-2 py-0.5 rounded-full whitespace-nowrap">✍ Firma aquí</span>
+                         class="absolute hidden border-2 border-primary-500 bg-primary-500/10 rounded pointer-events-auto transition-all duration-100 flex items-center justify-center group cursor-move"
+                         style="touch-action: none;">
+                        <span class="text-primary-700 text-xs font-semibold bg-primary-50/80 px-2 py-0.5 rounded-full whitespace-nowrap pointer-events-none">✍ Firma</span>
+                        
+                        <!-- Resize Handles -->
+                        <div class="absolute w-2.5 h-2.5 bg-primary-500 rounded-full border border-white opacity-0 group-hover:opacity-100 transition-opacity" 
+                             style="top: -6px; left: -6px; cursor: nwse-resize;" data-handle="nw"></div>
+                        <div class="absolute w-2.5 h-2.5 bg-primary-500 rounded-full border border-white opacity-0 group-hover:opacity-100 transition-opacity" 
+                             style="top: -6px; right: -6px; cursor: nesw-resize;" data-handle="ne"></div>
+                        <div class="absolute w-2.5 h-2.5 bg-primary-500 rounded-full border border-white opacity-0 group-hover:opacity-100 transition-opacity" 
+                             style="bottom: -6px; left: -6px; cursor: nesw-resize;" data-handle="sw"></div>
+                        <div class="absolute w-2.5 h-2.5 bg-primary-500 rounded-full border border-white opacity-0 group-hover:opacity-100 transition-opacity" 
+                             style="bottom: -6px; right: -6px; cursor: nwse-resize;" data-handle="se"></div>
                     </div>
                 </div>
             </div>
@@ -123,9 +187,29 @@
     const canvas = document.getElementById('pdf-render');
     const ctx = canvas.getContext('2d');
     const signatureBox = document.getElementById('signature-box');
-    const SIGNATURE_WIDTH_PT = 200;
-    const SIGNATURE_HEIGHT_PT = 50;
+    const pdfWrapper = document.getElementById('pdf-wrapper');
+    
+    // Initial size constants (in PDF points)
+    let SIGNATURE_WIDTH_PT = 200;
+    let SIGNATURE_HEIGHT_PT = 50;
+    let initialAspectRatio = SIGNATURE_WIDTH_PT / SIGNATURE_HEIGHT_PT;
+    
     let signaturePlaced = false;
+    let isDragging = false;
+    let isResizing = false;
+    let resizeHandle = null;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let boxStartX = 0;
+    let boxStartY = 0;
+    let boxStartWidth = 0;
+    let boxStartHeight = 0;
+
+    // UI Elements
+    const widthInput = document.getElementById('size-width-input');
+    const heightInput = document.getElementById('size-height-input');
+    const aspectRatioLock = document.getElementById('aspect-ratio-lock');
+    const sizeControls = document.getElementById('size-controls');
 
     const renderPage = num => {
         pageIsRendering = true;
@@ -157,40 +241,214 @@
     document.getElementById('prev-page').addEventListener('click', () => { if (pageNum > 1) queueRender(--pageNum); });
     document.getElementById('next-page').addEventListener('click', () => { if (pageNum < pdfDoc.numPages) queueRender(++pageNum); });
 
+    // Update size info display
+    const updateSizeDisplay = () => {
+        document.getElementById('size-info-page').textContent = pageNum;
+        document.getElementById('size-info-width').textContent = SIGNATURE_WIDTH_PT + ' pt';
+        document.getElementById('size-info-height').textContent = SIGNATURE_HEIGHT_PT + ' pt';
+        widthInput.value = SIGNATURE_WIDTH_PT;
+        heightInput.value = SIGNATURE_HEIGHT_PT;
+    };
+
+    // Sync box size when inputs change
+    const updateSignatureBoxSize = () => {
+        const boxW = SIGNATURE_WIDTH_PT * scale;
+        const boxH = SIGNATURE_HEIGHT_PT * scale;
+        signatureBox.style.width = boxW + 'px';
+        signatureBox.style.height = boxH + 'px';
+        updateSizeDisplay();
+        updateFormFields();
+    };
+
+    widthInput.addEventListener('change', () => {
+        const newWidth = Math.max(50, Math.min(400, parseFloat(widthInput.value)));
+        SIGNATURE_WIDTH_PT = newWidth;
+        
+        if (aspectRatioLock.checked) {
+            SIGNATURE_HEIGHT_PT = newWidth / initialAspectRatio;
+        }
+        updateSignatureBoxSize();
+    });
+
+    heightInput.addEventListener('change', () => {
+        const newHeight = Math.max(30, Math.min(200, parseFloat(heightInput.value)));
+        SIGNATURE_HEIGHT_PT = newHeight;
+        
+        if (aspectRatioLock.checked) {
+            SIGNATURE_WIDTH_PT = newHeight * initialAspectRatio;
+        }
+        updateSignatureBoxSize();
+    });
+
+    aspectRatioLock.addEventListener('change', () => {
+        if (aspectRatioLock.checked) {
+            initialAspectRatio = SIGNATURE_WIDTH_PT / SIGNATURE_HEIGHT_PT;
+        }
+    });
+
+    // Click on canvas to place signature
     canvas.addEventListener('click', e => {
+        if (isResizing || isDragging) return;
+
         const rect = canvas.getBoundingClientRect();
         const clickX = e.clientX - rect.left;
         const clickY = e.clientY - rect.top;
         const boxW = SIGNATURE_WIDTH_PT * scale;
         const boxH = SIGNATURE_HEIGHT_PT * scale;
+        
         let bx = Math.min(clickX, canvas.width - boxW);
         let by = Math.min(clickY, canvas.height - boxH);
         bx = Math.max(0, bx);
         by = Math.max(0, by);
 
-        signatureBox.style.width  = boxW + 'px';
-        signatureBox.style.height = boxH + 'px';
-        signatureBox.style.left   = bx + 'px';
-        signatureBox.style.top    = by + 'px';
+        signatureBox.style.left = bx + 'px';
+        signatureBox.style.top = by + 'px';
         signatureBox.classList.remove('hidden');
+        sizeControls.style.display = 'block';
 
+        updateFormFieldsFromBox();
+        signaturePlaced = true;
+    });
+
+    // Dragging the signature box
+    signatureBox.addEventListener('mousedown', e => {
+        if (e.target.hasAttribute('data-handle')) return;
+        
+        isDragging = true;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        boxStartX = signatureBox.offsetLeft;
+        boxStartY = signatureBox.offsetTop;
+        signatureBox.style.cursor = 'grabbing';
+    });
+
+    // Resize handles
+    signatureBox.querySelectorAll('[data-handle]').forEach(handle => {
+        handle.addEventListener('mousedown', e => {
+            e.stopPropagation();
+            isResizing = true;
+            resizeHandle = e.target.dataset.handle;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            boxStartX = signatureBox.offsetLeft;
+            boxStartY = signatureBox.offsetTop;
+            boxStartWidth = signatureBox.offsetWidth;
+            boxStartHeight = signatureBox.offsetHeight;
+        });
+    });
+
+    // Mouse move for dragging and resizing
+    document.addEventListener('mousemove', e => {
+        if (!isDragging && !isResizing) return;
+
+        const deltaX = e.clientX - dragStartX;
+        const deltaY = e.clientY - dragStartY;
+        const boxW = SIGNATURE_WIDTH_PT * scale;
+        const boxH = SIGNATURE_HEIGHT_PT * scale;
+
+        if (isDragging) {
+            let newX = boxStartX + deltaX;
+            let newY = boxStartY + deltaY;
+            
+            newX = Math.max(0, Math.min(canvas.width - boxW, newX));
+            newY = Math.max(0, Math.min(canvas.height - boxH, newY));
+            
+            signatureBox.style.left = newX + 'px';
+            signatureBox.style.top = newY + 'px';
+            updateFormFieldsFromBox();
+        }
+
+        if (isResizing) {
+            const pdfWrapper = document.getElementById('pdf-wrapper');
+            const wrapperRect = pdfWrapper.getBoundingClientRect();
+            const minWidth = 50 * scale;
+            const maxWidth = 400 * scale;
+            const minHeight = 30 * scale;
+            const maxHeight = 200 * scale;
+
+            let newWidth = boxStartWidth;
+            let newHeight = boxStartHeight;
+            let newX = boxStartX;
+            let newY = boxStartY;
+
+            if (resizeHandle.includes('e')) {
+                newWidth = Math.max(minWidth, Math.min(maxWidth, boxStartWidth + deltaX));
+            }
+            if (resizeHandle.includes('w')) {
+                const newW = Math.max(minWidth, Math.min(maxWidth, boxStartWidth - deltaX));
+                newX = boxStartX + (boxStartWidth - newW);
+                newWidth = newW;
+            }
+            if (resizeHandle.includes('s')) {
+                newHeight = Math.max(minHeight, Math.min(maxHeight, boxStartHeight + deltaY));
+            }
+            if (resizeHandle.includes('n')) {
+                const newH = Math.max(minHeight, Math.min(maxHeight, boxStartHeight - deltaY));
+                newY = boxStartY + (boxStartHeight - newH);
+                newHeight = newH;
+            }
+
+            // Aspect ratio lock
+            if (aspectRatioLock.checked) {
+                const newAspect = newWidth / initialAspectRatio;
+                if (resizeHandle.includes('e') || resizeHandle.includes('w')) {
+                    newHeight = newAspect;
+                } else {
+                    newWidth = newHeight * initialAspectRatio;
+                }
+            }
+
+            // Keep inside canvas
+            if (newX + newWidth > canvas.width) newWidth = canvas.width - newX;
+            if (newY + newHeight > canvas.height) newHeight = canvas.height - newY;
+            newX = Math.max(0, Math.min(newX, canvas.width - newWidth));
+            newY = Math.max(0, Math.min(newY, canvas.height - newHeight));
+
+            signatureBox.style.left = newX + 'px';
+            signatureBox.style.top = newY + 'px';
+            signatureBox.style.width = newWidth + 'px';
+            signatureBox.style.height = newHeight + 'px';
+
+            SIGNATURE_WIDTH_PT = newWidth / scale;
+            SIGNATURE_HEIGHT_PT = newHeight / scale;
+            updateSizeDisplay();
+            updateFormFieldsFromBox();
+        }
+    });
+
+    // Mouse up
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+        isResizing = false;
+        resizeHandle = null;
+        signatureBox.style.cursor = 'move';
+    });
+
+    // Update form fields from box position
+    const updateFormFieldsFromBox = () => {
+        const bx = signatureBox.offsetLeft;
+        const by = signatureBox.offsetTop;
         const pdf_x = bx / scale;
         const pdf_y_bottom = (canvas.height / scale) - (by / scale) - SIGNATURE_HEIGHT_PT;
 
-        document.getElementById('id_page').value   = pageNum;
-        document.getElementById('id_x').value      = pdf_x.toFixed(2);
-        document.getElementById('id_y').value      = pdf_y_bottom.toFixed(2);
-        document.getElementById('id_width').value  = SIGNATURE_WIDTH_PT;
-        document.getElementById('id_height').value = SIGNATURE_HEIGHT_PT;
+        document.getElementById('id_page').value = pageNum;
+        document.getElementById('id_x').value = pdf_x.toFixed(2);
+        document.getElementById('id_y').value = pdf_y_bottom.toFixed(2);
+        document.getElementById('id_width').value = SIGNATURE_WIDTH_PT.toFixed(2);
+        document.getElementById('id_height').value = SIGNATURE_HEIGHT_PT.toFixed(2);
 
         // Update info panel
         document.getElementById('info-page').textContent = pageNum;
-        document.getElementById('info-x').textContent    = pdf_x.toFixed(0) + ' pt';
-        document.getElementById('info-y').textContent    = pdf_y_bottom.toFixed(0) + ' pt';
-        document.getElementById('info-set').textContent  = '✅ Posición seleccionada';
-        document.getElementById('info-set').className    = 'col-span-2 text-emerald-600 font-medium';
-        signaturePlaced = true;
-    });
+        document.getElementById('info-x').textContent = pdf_x.toFixed(0) + ' pt';
+        document.getElementById('info-y').textContent = pdf_y_bottom.toFixed(0) + ' pt';
+        document.getElementById('info-set').textContent = '✅ Posición seleccionada';
+        document.getElementById('info-set').className = 'col-span-2 text-emerald-600 font-medium';
+    };
+
+    const updateFormFields = () => {
+        document.getElementById('id_width').value = SIGNATURE_WIDTH_PT.toFixed(2);
+        document.getElementById('id_height').value = SIGNATURE_HEIGHT_PT.toFixed(2);
+    };
 
     // Loading state
     document.getElementById('sign-form').addEventListener('submit', function(e) {
@@ -203,5 +461,8 @@
             Firmando PDF...`;
         btn.disabled = true;
     });
+
+    // Initialize size display
+    updateSizeDisplay();
 </script>
 {% endblock %}
