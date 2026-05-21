@@ -21,7 +21,7 @@ from .stamp import generate_signature_stamp
 def get_pdf_page_size(pdf_path: str, page: int = 1) -> tuple:
     """Obtiene el ancho y alto de una página PDF en puntos."""
     with open(pdf_path, 'rb') as f:
-        reader = PdfFileReader(f)
+        reader = PdfFileReader(f, strict=False)
         page_obj = reader.get_page(page - 1)
         box = page_obj.mediabox
         width = float(box[2] - box[0])
@@ -109,7 +109,7 @@ def sign_pdf_service(
         box_coords = (x, y, x + width, y + height)
 
         with open(input_pdf_path, 'rb') as doc:
-            w = IncrementalPdfFileWriter(doc)
+            w = IncrementalPdfFileWriter(doc, strict=False)
             append_signature_field(
                 w,
                 SigFieldSpec('FirmaDigital', box=box_coords, on_page=page - 1),

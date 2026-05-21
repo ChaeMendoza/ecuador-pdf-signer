@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:15
+    image: docker.io/library/postgres:15
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
@@ -16,7 +16,7 @@ services:
                python manage.py migrate &&
                python manage.py runserver 0.0.0.0:8000"
     volumes:
-      - .:/app
+      - .:/app:z
       - media_volume:/app/media
     ports:
       - "8000:8000"
@@ -29,7 +29,8 @@ services:
     build: .
     command: tailwindcss --input ./static/src/input.css --output ./static/dist/output.css --watch
     volumes:
-      - .:/app
+      - .:/app:z
+    tty: true
     depends_on:
       - web
 

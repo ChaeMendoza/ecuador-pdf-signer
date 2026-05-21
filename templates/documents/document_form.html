@@ -13,7 +13,11 @@
         <form method="post" enctype="multipart/form-data" class="space-y-6" id="upload-form">
             {% csrf_token %}
             <div>
-                <label for="{{ form.original_file.id_for_label }}">{{ form.original_file.label }}</label>
+                <label class="block text-sm font-medium text-gray-700">{{ form.original_file.label }}</label>
+                <!-- Hidden file input -->
+                <div class="hidden">
+                    {{ form.original_file }}
+                </div>
                 <!-- Custom file drop zone -->
                 <div class="mt-2 flex justify-center rounded-xl border-2 border-dashed border-gray-300 px-6 pt-5 pb-6 hover:border-primary-400 transition-colors duration-200 cursor-pointer" id="drop-zone">
                     <div class="space-y-2 text-center">
@@ -21,11 +25,8 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
                         <div class="text-sm text-gray-600">
-                            <label for="{{ form.original_file.id_for_label }}" class="relative cursor-pointer rounded-md font-semibold text-primary-600 hover:text-primary-500">
-                                <span>Selecciona un archivo</span>
-                                {{ form.original_file }}
-                            </label>
-                            <p class="pl-1 inline"> o arrástralo aquí</p>
+                            <span class="font-semibold text-primary-600 hover:text-primary-500">Selecciona un archivo</span>
+                            <span class="pl-1">o arrástralo aquí</span>
                         </div>
                         <p class="text-xs text-gray-500">Solo archivos PDF</p>
                         <p id="file-name-display" class="text-sm font-medium text-primary-600 hidden"></p>
@@ -50,23 +51,73 @@
 </div>
 
 <script>
-    // File name display
     const fileInput = document.getElementById('{{ form.original_file.id_for_label }}');
     const fileNameDisplay = document.getElementById('file-name-display');
     const dropZone = document.getElementById('drop-zone');
     
-    fileInput.classList.add('sr-only');
+    // Trigger file picker on click
+    dropZone.addEventListener('click', () => {
+        fileInput.click();
+    });
+    
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, false);
+    });
+
+    // Highlight drop zone on drag over
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => {
+            dropZone.classList.add('border-primary-400', 'bg-primary-50');
+        }, false);
+    });
+
+    // Unhighlight drop zone on drag leave / drop
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => {
+            if (!fileInput.files || !fileInput.files.length) {
+                dropZone.classList.remove('border-primary-400', 'bg-primary-50');
+            }
+        }, false);
+    });
+
+    // Handle dropped files
+    dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files && files.length) {
+            fileInput.files = files;
+            // Trigger the change event manually to update display and validate
+            fileInput.dispatchEvent(new Event('change'));
+        }
+    }, false);
     
     fileInput.addEventListener('change', function() {
         if (this.files && this.files[0]) {
-            fileNameDisplay.textContent = this.files[0].name;
+            const file = this.files[0];
+            if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+                alert('Por favor, selecciona un archivo PDF válido.');
+                this.value = '';
+                fileNameDisplay.classList.add('hidden');
+                dropZone.classList.remove('border-primary-400', 'bg-primary-50');
+                return;
+            }
+            fileNameDisplay.textContent = file.name;
             fileNameDisplay.classList.remove('hidden');
             dropZone.classList.add('border-primary-400', 'bg-primary-50');
         }
     });
     
     // Loading state on submit
-    document.getElementById('upload-form').addEventListener('submit', function() {
+    document.getElementById('upload-form').addEventListener('submit', function(e) {
+        if (!fileInput.files || !fileInput.files.length) {
+            e.preventDefault();
+            alert('Por favor, selecciona o arrastra un archivo PDF antes de subirlo.');
+            return;
+        }
         const btn = document.getElementById('submit-btn');
         btn.innerHTML = `
             <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
