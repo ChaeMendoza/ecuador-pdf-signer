@@ -62,8 +62,13 @@
 
 <!-- Documents Table -->
 <div class="card">
-    <div class="px-6 py-4 border-b border-gray-100">
+    <div class="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
         <h2 class="text-base font-semibold text-gray-800">Todos los documentos</h2>
+        <div class="flex items-center bg-gray-100 p-1 rounded-lg">
+            <a href="{% url 'document_list' %}" class="px-3 py-1 text-xs font-semibold rounded-md transition-all {% if not current_source %}bg-white text-gray-900 shadow-sm{% else %}text-gray-500 hover:text-gray-900{% endif %}">Todos</a>
+            <a href="{% url 'document_list' %}?source=web" class="px-3 py-1 text-xs font-semibold rounded-md transition-all {% if current_source == 'web' %}bg-white text-gray-900 shadow-sm{% else %}text-gray-500 hover:text-gray-900{% endif %}">Firma Web</a>
+            <a href="{% url 'document_list' %}?source=api" class="px-3 py-1 text-xs font-semibold rounded-md transition-all {% if current_source == 'api' %}bg-white text-gray-900 shadow-sm{% else %}text-gray-500 hover:text-gray-900{% endif %}">Firma API</a>
+        </div>
     </div>
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-100">
@@ -87,7 +92,14 @@
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-sm font-medium text-gray-900 truncate max-w-xs">{{ doc.original_file.name|slice:"20:" }}</p>
+                                <div class="flex items-center gap-2">
+                                    <p class="text-sm font-medium text-gray-900 truncate max-w-xs">{{ doc.original_file.name|slice:"20:" }}</p>
+                                    {% if doc.source == 'api' %}
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200">API</span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-700 border border-gray-200">Web</span>
+                                    {% endif %}
+                                </div>
                                 <p class="text-xs text-gray-400">ID #{{ doc.id }}</p>
                             </div>
                         </div>

@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Consola de Integración API</h1>
+    <p class="mt-2 text-sm text-gray-500">Automatiza la firma digital de certificados y documentos integrando tus sistemas con SignApp.</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Columna Izquierda: Gestión de Tokens y Perfiles -->
+    <div class="lg:col-span-2 space-y-8">
+        
+        <!-- Tarjeta: API Tokens -->
+        <div class="card bg-white p-6 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800">Tokens de Acceso (API Keys)</h2>
+                    <p class="text-xs text-gray-400 mt-1">Utiliza estos tokens en el encabezado de Autorización para autenticar peticiones.</p>
+                </div>
+                <button onclick="toggleModal('token-modal')" class="btn-primary text-xs py-1.5 px-3">
+                    Generar Token
+                </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-100">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Identificador / Nombre</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Token</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha Creación</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 bg-white">
+                        {% for t in tokens %}
+                        <tr class="text-sm hover:bg-gray-50 transition-colors">
+                            <td class="px-4 py-4 whitespace-nowrap font-medium text-gray-900">{{ t.name }}</td>
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-2">
+                                    <code class="bg-gray-100 text-gray-800 px-2 py-0.5 rounded text-xs select-all" id="token-key-{{ t.id }}">{{ t.token|slice:":8" }}************************</code>
+                                    <button onclick="copyToClipboard('{{ t.token }}', this)" class="text-gray-400 hover:text-gray-600 transition-colors" title="Copiar Token">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-xs text-gray-500">{{ t.created_at|date:"d M Y, H:i" }}</td>
+                            <td class="px-4 py-4 whitespace-nowrap text-right text-xs font-medium">
+                                <form action="{% url 'token_revoke' t.id %}" method="post" onsubmit="return confirm('¿Estás seguro de revocar este token? Las integraciones que lo utilicen dejarán de funcionar inmediatamente.');" class="inline m-0">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-red-500 hover:text-red-700 font-semibold transition-colors">
+                                        Revocar
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="px-4 py-8 text-center text-gray-400 text-sm">
+                                No has generado ningún token de API aún.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tarjeta: Perfiles de Firma -->
+        <div class="card bg-white p-6 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800">Perfiles de Firma (Firma con Posición Fija)</h2>
+                    <p class="text-xs text-gray-400 mt-1">Crea plantillas fijas de firma para automatizar certificados como los de la Escuela de Derechos.</p>
+                </div>
+                <button onclick="toggleModal('profile-modal')" class="btn-primary text-xs py-1.5 px-3">
+                    Nuevo Perfil
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-100">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">ID</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nombre del Perfil</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Pág.</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">X, Y (pts)</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Ancho x Alto</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 bg-white">
+                        {% for p in profiles %}
+                        <tr class="text-sm hover:bg-gray-50 transition-colors">
+                            <td class="px-4 py-4 whitespace-nowrap text-xs font-semibold text-gray-600">
+                                <code class="bg-gray-100 px-1.5 py-0.5 rounded text-primary-700">#{{ p.id }}</code>
+                            </td>
+                            <td class="px-4 py-4">
+                                <span class="font-medium text-gray-900 block">{{ p.name }}</span>
+                                {% if p.description %}
+                                    <span class="text-xs text-gray-400 block truncate max-w-xs">{{ p.description }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-center text-gray-700 font-semibold">{{ p.page }}</td>
+                            <td class="px-4 py-4 whitespace-nowrap text-center text-xs text-gray-500 font-mono">{{ p.x|floatformat:1 }}, {{ p.y|floatformat:1 }}</td>
+                            <td class="px-4 py-4 whitespace-nowrap text-center text-xs text-gray-500 font-mono">{{ p.width|floatformat:0 }}x{{ p.height|floatformat:0 }}</td>
+                            <td class="px-4 py-4 whitespace-nowrap text-right text-xs font-medium">
+                                <form action="{% url 'profile_delete' p.id %}" method="post" onsubmit="return confirm('¿Estás seguro de eliminar este perfil de firma?');" class="inline m-0">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-red-500 hover:text-red-700 font-semibold transition-colors">
+                                        Eliminar
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-4 py-8 text-center text-gray-400 text-sm">
+                                No tienes perfiles de firma registrados aún.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Columna Derecha: Guía de Integración / Documentación -->
+    <div class="lg:col-span-1 space-y-8">
+        
+        <!-- Tarjeta: Documentación Rápida -->
+        <div class="card bg-gray-900 text-gray-100 p-6 shadow-lg border border-gray-800">
+            <h2 class="text-lg font-bold text-white mb-4">Guía de Integración Rápida</h2>
+            
+            <div class="space-y-6 text-sm text-gray-300">
+                <div>
+                    <span class="badge-success text-xs bg-emerald-950 text-emerald-300 border border-emerald-800">1. Cabecera</span>
+                    <p class="mt-2 text-xs">Añade el siguiente Header HTTP a todas tus peticiones:</p>
+                    <pre class="bg-gray-950 p-2.5 rounded-lg text-xs font-mono text-emerald-400 mt-1 select-all overflow-x-auto">Authorization: Token TU_API_KEY</pre>
+                </div>
+
+                <div class="border-t border-gray-800 pt-4">
+                    <span class="badge-success text-xs bg-blue-950 text-blue-300 border border-blue-800">2. Firma Individual</span>
+                    <p class="mt-2 text-xs">Envía un POST tipo <code>multipart/form-data</code> a:</p>
+                    <code class="text-xs text-blue-400 font-mono">POST /api/v1/sign/individual/</code>
+                    <p class="text-xs text-gray-400 mt-1">Ejemplo CURL:</p>
+                    <div class="relative">
+                        <pre class="bg-gray-950 p-2.5 rounded-lg text-[10px] font-mono text-gray-300 mt-1.5 overflow-x-auto select-all" id="curl-single">curl -X POST \
+  -H "Authorization: Token <tu_token>" \
+  -F "pdf_file=@certificado.pdf" \
+  -F "p12_file=@firma.p12" \
+  -F "password=ClaveFirma123" \
+  -F "profile_id=1" \
+  http://localhost:8000/api/v1/sign/individual/ \
+  --output firmado.pdf</pre>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-800 pt-4">
+                    <span class="badge-success text-xs bg-purple-950 text-purple-300 border border-purple-800">3. Firma Masiva (ZIP)</span>
+                    <p class="mt-2 text-xs">Envía múltiples archivos PDF en el campo <code>documents</code>:</p>
+                    <code class="text-xs text-purple-400 font-mono">POST /api/v1/sign/batch/</code>
+                    <p class="text-xs text-gray-400 mt-1">Ejemplo CURL:</p>
+                    <pre class="bg-gray-950 p-2.5 rounded-lg text-[10px] font-mono text-gray-300 mt-1.5 overflow-x-auto select-all" id="curl-batch">curl -X POST \
+  -H "Authorization: Token <tu_token>" \
+  -F "documents=@certificado1.pdf" \
+  -F "documents=@certificado2.pdf" \
+  -F "p12_file=@firma.p12" \
+  -F "password=ClaveFirma123" \
+  -F "profile_id=1" \
+  http://localhost:8000/api/v1/sign/batch/ \
+  --output firmados.zip</pre>
+                </div>
+                
+                <div class="border-t border-gray-800 pt-4 text-xs text-gray-400">
+                    <p class="font-medium text-gray-300">Tip de Posicionamiento:</p>
+                    <p class="mt-1">El sistema usa puntos PDF (1 pulgada = 72 puntos). Un certificado A4 estándar mide 595 x 842 puntos.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- MODALES DE FORMULARIO -->
+<!-- ============================================== -->
+
+<!-- Modal: Generar Token -->
+<div id="token-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-100 relative">
+        <h3 class="text-lg font-bold text-gray-900 mb-2">Generar Nuevo Token</h3>
+        <p class="text-xs text-gray-500 mb-6">Asigna un nombre descriptivo para identificar qué aplicación o sistema externo usará este token.</p>
+        
+        <form action="{% url 'token_create' %}" method="post" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label for="token-name" class="block text-sm font-semibold text-gray-700">Nombre / Identificador</label>
+                <input type="text" name="name" id="token-name" required placeholder="Ej: Escuela de Derechos API" class="mt-1 block w-full rounded-xl border border-gray-200 px-4 py-2 text-sm focus:border-primary-500 focus:outline-none">
+            </div>
+            
+            <div class="flex items-center gap-3 pt-4">
+                <button type="submit" class="btn-primary flex-grow text-sm py-2">Generar Token</button>
+                <button type="button" onclick="toggleModal('token-modal')" class="btn-secondary flex-grow text-sm py-2 text-center">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Crear Perfil -->
+<div id="profile-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-gray-100 relative">
+        <h3 class="text-lg font-bold text-gray-900 mb-2">Crear Perfil de Firma</h3>
+        <p class="text-xs text-gray-500 mb-6">Configura la posición exacta de la firma digital en tu documento para automatizar el proceso.</p>
+        
+        <form action="{% url 'profile_create' %}" method="post" class="space-y-4">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div class="col-span-2">
+                    <label for="profile-name" class="block text-xs font-semibold text-gray-700">Nombre del Perfil</label>
+                    <input type="text" name="name" id="profile-name" required placeholder="Ej: Escuela de Derechos - Certificados" class="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-1.5 text-sm focus:border-primary-500">
+                </div>
+                <div class="col-span-2">
+                    <label for="profile-desc" class="block text-xs font-semibold text-gray-700">Descripción / Notas (Opcional)</label>
+                    <textarea name="description" id="profile-desc" placeholder="Ej: Firma fija en la parte inferior derecha del certificado de derechos" class="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-1.5 text-sm focus:border-primary-500 h-16 resize-none"></textarea>
+                </div>
+                <div>
+                    <label for="profile-page" class="block text-xs font-semibold text-gray-700">Página</label>
+                    <input type="number" name="page" id="profile-page" required value="1" min="1" class="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-1.5 text-sm focus:border-primary-500">
+                    <span class="helptext">1 es la primera pág.</span>
+                </div>
+                <div>
+                    <label for="profile-width" class="block text-xs font-semibold text-gray-700">Ancho (Puntos)</label>
+                    <input type="number" name="width" id="profile-width" required value="200" min="50" max="400" class="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-1.5 text-sm focus:border-primary-500">
+                    <span class="helptext">Min 50, Max 400.</span>
+                </div>
+                <div>
+                    <label for="profile-x" class="block text-xs font-semibold text-gray-700">Posición X (Puntos)</label>
+                    <input type="number" name="x" id="profile-x" required placeholder="Ej: 450" class="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-1.5 text-sm focus:border-primary-500">
+                    <span class="helptext">Desde el borde izquierdo.</span>
+                </div>
+                <div>
+                    <label for="profile-y" class="block text-xs font-semibold text-gray-700">Posición Y (Puntos)</label>
+                    <input type="number" name="y" id="profile-y" required placeholder="Ej: 100" class="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-1.5 text-sm focus:border-primary-500">
+                    <span class="helptext">Desde el borde inferior.</span>
+                </div>
+                <div class="col-span-2">
+                    <label for="profile-height" class="block text-xs font-semibold text-gray-700">Alto (Puntos)</label>
+                    <input type="number" name="height" id="profile-height" required value="50" min="30" max="200" class="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-1.5 text-sm focus:border-primary-500">
+                    <span class="helptext">Min 30, Max 200.</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3 pt-4 border-t border-gray-100">
+                <button type="submit" class="btn-primary flex-grow text-sm py-2">Guardar Perfil</button>
+                <button type="button" onclick="toggleModal('profile-modal')" class="btn-secondary flex-grow text-sm py-2 text-center">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function toggleModal(id) {
+        const modal = document.getElementById(id);
+        if (modal.classList.contains('hidden')) {
+            modal.classList.remove('hidden');
+        } else {
+            modal.classList.add('hidden');
+        }
+    }
+    
+    function copyToClipboard(text, btn) {
+        navigator.clipboard.writeText(text).then(() => {
+            const originalIcon = btn.innerHTML;
+            btn.innerHTML = `
+                <svg class="h-4 w-4 text-emerald-500 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+            `;
+            setTimeout(() => {
+                btn.innerHTML = originalIcon;
+            }, 2000);
+        }).catch(err => {
+            console.error('Error al copiar: ', err);
+        });
+    }
+</script>
+{% endblock %}

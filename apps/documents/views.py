@@ -3,7 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from django.http import HttpResponse
-from .models import Document
+from .models import Document, SignatureProfile
+from apps.users.models import APIToken
 from .forms import DocumentForm, SignDocumentForm, BatchSignForm
 from apps.signing.services import sign_pdf_service, get_pdf_page_size
 from django.core.files.base import ContentFile
@@ -14,8 +15,17 @@ from io import BytesIO
 
 @login_required
 def document_list(request):
-    documents = Document.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, 'documents/document_list.html', {'documents': documents})
+    source_filter = request.GET.get('source')
+    documents = Document.objects.filter(user=request.user)
+    
+    if source_filter in ('web', 'api'):
+        documents = documents.filter(source=source_filter)
+        
+    documents = documents.order_by('-created_at')
+    return render(request, 'documents/document_list.html', {
+        'documents': documents,
+        'current_source': source_filter
+    })
 
 @login_required
 def document_upload(request):
@@ -164,3 +174,78 @@ def batch_sign(request):
         form = BatchSignForm()
     
     return render(request, 'documents/batch_sign.html', {'form': form})
+
+
+@login_required
+def api_settings(request):
+    tokens = APIToken.objects.filter(user=request.user).order_by('-created_at')
+    profiles = SignatureProfile.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, 'documents/api_settings.html', {
+        'tokens': tokens,
+        'profiles': profiles
+    })
+
+
+@login_required
+def token_create(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        if name:
+            APIToken.objects.create(user=request.user, name=name)
+            messages.success(request, 'Token de API generado exitosamente.')
+        else:
+            messages.error(request, 'Debe especificar un nombre para el token.')
+    return redirect('api_settings')
+
+
+@login_required
+def token_revoke(request, pk):
+    if request.method == 'POST':
+        token = get_object_or_404(APIToken, pk=pk, user=request.user)
+        token.delete()
+        messages.success(request, 'Token de API revocado exitosamente.')
+    return redirect('api_settings')
+
+
+@login_required
+def profile_create(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        description = request.POST.get('description', '')
+        try:
+            page = int(request.POST.get('page', 1))
+            x = float(request.POST.get('x', 0))
+            y = float(request.POST.get('y', 0))
+            width = float(request.POST.get('width', 200))
+            height = float(request.POST.get('height', 50))
+            
+            if not name:
+                raise ValueError("El nombre es requerido.")
+            if page < 1:
+                raise ValueError("La página debe ser mayor o igual a 1.")
+            if width <= 0 or height <= 0:
+                raise ValueError("El ancho y alto deben ser mayores a 0.")
+                
+            SignatureProfile.objects.create(
+                user=request.user,
+                name=name,
+                description=description,
+                page=page,
+                x=x,
+                y=y,
+                width=width,
+                height=height
+            )
+            messages.success(request, 'Perfil de firma creado exitosamente.')
+        except ValueError as e:
+            messages.error(request, f'Error al crear el perfil: {str(e)}')
+    return redirect('api_settings')
+
+
+@login_required
+def profile_delete(request, pk):
+    if request.method == 'POST':
+        profile = get_object_or_404(SignatureProfile, pk=pk, user=request.user)
+        profile.delete()
+        messages.success(request, 'Perfil de firma eliminado exitosamente.')
+    return redirect('api_settings')

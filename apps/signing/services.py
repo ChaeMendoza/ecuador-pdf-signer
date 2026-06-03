@@ -22,8 +22,9 @@ def get_pdf_page_size(pdf_path: str, page: int = 1) -> tuple:
     """Obtiene el ancho y alto de una página PDF en puntos."""
     with open(pdf_path, 'rb') as f:
         reader = PdfFileReader(f, strict=False)
-        page_obj = reader.get_page(page - 1)
-        box = page_obj.mediabox
+        page_ref, _ = reader.find_page_for_modification(page - 1)
+        page_obj = page_ref.get_object()
+        box = page_obj['/MediaBox']
         width = float(box[2] - box[0])
         height = float(box[3] - box[1])
         return width, height

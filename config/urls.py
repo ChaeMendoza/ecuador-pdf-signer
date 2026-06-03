@@ -8,6 +8,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('users/', include('apps.users.urls')),
     path('documents/', include('apps.documents.urls')),
+    path('api/v1/', include('apps.documents.api_urls')),
     path('', landing, name='landing'),
 ]
 
