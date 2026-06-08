@@ -260,3 +260,33 @@ class ESignatureAPITests(TestCase):
         self.assertIsNotNone(batch_log)
         self.assertEqual(batch_log.document_count, 2)
         self.assertEqual(batch_log.signature_profile, self.profile)
+
+    def test_sign_individual_invalid_password(self):
+        """Verifica que al firmar con una contraseña incorrecta se retorne un error claro y amigable."""
+        url = reverse('api_sign_individual')
+        
+        pdf_file = SimpleUploadedFile("original.pdf", self.pdf_content, content_type="application/pdf")
+        p12_file = SimpleUploadedFile("firma.p12", self.p12_content, content_type="application/x-pkcs12")
+        
+        payload = {
+            'password': 'wrongpassword',
+            'page': 1,
+            'x': 100,
+            'y': 200,
+            'width': 200,
+            'height': 50,
+            'return_binary': 'true'
+        }
+        
+        response = self.client.post(
+            url,
+            {**payload, 'pdf_file': pdf_file, 'p12_file': p12_file},
+            format='multipart',
+            **self.get_auth_header()
+        )
+        
+        self.assertEqual(response.status_code, 500)
+        data = response.json()
+        self.assertIn('error', data)
+        self.assertIn('No se pudo cargar el certificado o la clave privada', data['error'])
+

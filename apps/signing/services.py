@@ -75,6 +75,11 @@ def sign_pdf_service(
         signer = signers.SimpleSigner.load_pkcs12(
             p12_temp_path, passphrase=password.encode('utf-8')
         )
+        if signer is None:
+            raise ValueError(
+                "No se pudo cargar el certificado o la clave privada. "
+                "Verifique que la contraseña sea correcta y que el archivo esté en formato .p12 o .pfx válido."
+            )
 
         # ── 4. Generar imagen de estampa (QR + texto) ──────────────────────
         now = datetime.now(tz=timezone.utc)
