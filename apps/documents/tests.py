@@ -6,6 +6,7 @@ from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
+from unittest.mock import patch
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -289,4 +290,85 @@ class ESignatureAPITests(TestCase):
         data = response.json()
         self.assertIn('error', data)
         self.assertIn('No se pudo cargar el certificado o la clave privada', data['error'])
+
+    @patch('pyhanko.sign.timestamps.HTTPTimeStamper')
+    def test_sign_individual_with_tsa_url(self, mock_tsa):
+        """Verifica que el servicio de firma acepte y configure el sellado de tiempo."""
+        from pyhanko.sign.timestamps import DummyTimeStamper
+        from cryptography import x509
+        from cryptography.hazmat.primitives import hashes
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.x509.oid import NameOID
+        import datetime
+
+        tsa_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048
+        )
+        tsa_subject = tsa_issuer = x509.Name([
+            x509.NameAttribute(NameOID.COUNTRY_NAME, u"EC"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"Test TSA"),
+            x509.NameAttribute(NameOID.COMMON_NAME, u"Test TSA"),
+        ])
+        tsa_cert = x509.CertificateBuilder().subject_name(
+            tsa_subject
+        ).issuer_name(
+            tsa_issuer
+        ).public_key(
+            tsa_key.public_key()
+        ).serial_number(
+            x509.random_serial_number()
+        ).not_valid_before(
+            datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
+        ).not_valid_after(
+            datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=10)
+        ).sign(tsa_key, hashes.SHA256())
+
+        # Convertir a tipos asn1crypto requeridos por DummyTimeStamper
+        from asn1crypto import x509 as asn1_x509, keys as asn1_keys
+        from cryptography.hazmat.primitives import serialization
+        
+        asn1_cert_obj = asn1_x509.Certificate.load(tsa_cert.public_bytes(serialization.Encoding.DER))
+        asn1_key_obj = asn1_keys.PrivateKeyInfo.load(
+            tsa_key.private_bytes(
+                serialization.Encoding.DER,
+                serialization.PrivateFormat.PKCS8,
+                serialization.NoEncryption()
+            )
+        )
+
+        mock_tsa.return_value = DummyTimeStamper(tsa_cert=asn1_cert_obj, tsa_key=asn1_key_obj)
+        
+        url = reverse('api_sign_individual')
+        
+        pdf_file = SimpleUploadedFile("original.pdf", self.pdf_content, content_type="application/pdf")
+        p12_file = SimpleUploadedFile("firma.p12", self.p12_content, content_type="application/x-pkcs12")
+        
+        payload = {
+            'password': 'testpass',
+            'page': 1,
+            'x': 100,
+            'y': 200,
+            'width': 200,
+            'height': 50,
+            'return_binary': 'true',
+            'tsa_url': 'https://tsa.test.com',
+            'tsa_username': 'testuser',
+            'tsa_password': 'tsapassword'
+        }
+        
+        response = self.client.post(
+            url,
+            {**payload, 'pdf_file': pdf_file, 'p12_file': p12_file},
+            format='multipart',
+            **self.get_auth_header()
+        )
+        
+        if response.status_code != 200:
+            print("API ERROR RESPONSE:", response.content)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        
+        # Verificar que se intentó instanciar HTTPTimeStamper con el URL de prueba y credenciales
+        mock_tsa.assert_called_once_with(url='https://tsa.test.com', auth=('testuser', 'tsapassword'))
 

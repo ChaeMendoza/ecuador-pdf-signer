@@ -33,8 +33,9 @@ def get_pdf_page_size(pdf_path: str, page: int = 1) -> tuple:
 def _extract_cn_from_p12(p12_bytes: bytes, password: str) -> str:
     """Extrae el Common Name (CN) del certificado dentro del .p12."""
     try:
+        pass_bytes = password.encode('utf-8') if isinstance(password, str) and password is not None else password
         private_key, certificate, _ = load_key_and_certificates(
-            p12_bytes, password.encode('utf-8')
+            p12_bytes, pass_bytes
         )
         attrs = certificate.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
         if attrs:
@@ -42,6 +43,67 @@ def _extract_cn_from_p12(p12_bytes: bytes, password: str) -> str:
     except Exception:
         pass
     return 'Firmante'
+
+
+def _load_signer_from_p12_bytes(p12_bytes: bytes, password: str) -> signers.SimpleSigner:
+    """
+    Carga un SimpleSigner de pyHanko a partir de bytes de un archivo PKCS#12 (.p12/.pfx u otros sin extensión).
+    Altamente tolerante a fallos y compatible con certificados legacy (ej. Security Data) y estándar (ej. Uanataca).
+
+    1. Intenta cargar directamente los bytes usando pyHanko `SimpleSigner.load_pkcs12_data`.
+    2. Si pyHanko falla, ejecuta la extracción manual usando `cryptography` e instancia `SimpleSigner`
+       con la llave privada, certificado principal y certificados adicionales.
+    """
+    pass_bytes = password.encode('utf-8') if isinstance(password, str) and password is not None else password
+
+    # 1. Intento principal usando pyHanko en memoria
+    try:
+        signer = signers.SimpleSigner.load_pkcs12_data(p12_bytes, passphrase=pass_bytes)
+        if signer is not None:
+            return signer
+    except Exception:
+        pass
+
+    # 2. Fallback de extracción manual con cryptography (para Security Data o formatos legacy/crudos)
+    try:
+        private_key, certificate, additional_certificates = load_key_and_certificates(
+            p12_bytes, pass_bytes
+        )
+    except Exception as e:
+        raise ValueError(
+            "No se pudo cargar el certificado o la clave privada. "
+            "Verifique que la contraseña sea correcta y que el archivo de firma sea válido."
+        ) from e
+
+    if not private_key or not certificate:
+        raise ValueError(
+            "No se pudo cargar el certificado o la clave privada. "
+            "Verifique que la contraseña sea correcta y que el archivo esté en formato PKCS#12 válido."
+        )
+
+    from pyhanko.sign.signers.pdf_cms import (
+        translate_pyca_cryptography_key_to_asn1,
+        translate_pyca_cryptography_cert_to_asn1,
+    )
+    from pyhanko_certvalidator.registry import SimpleCertificateStore
+
+    kinfo = translate_pyca_cryptography_key_to_asn1(private_key)
+    cert_asn1 = translate_pyca_cryptography_cert_to_asn1(certificate)
+
+    cs = SimpleCertificateStore()
+    if additional_certificates:
+        other_certs_asn1 = [
+            translate_pyca_cryptography_cert_to_asn1(c)
+            for c in additional_certificates
+            if c is not None
+        ]
+        cs.register_multiple(other_certs_asn1)
+
+    return signers.SimpleSigner(
+        signing_key=kinfo,
+        signing_cert=cert_asn1,
+        cert_registry=cs,
+    )
 
 
 def sign_pdf_service(
@@ -53,33 +115,23 @@ def sign_pdf_service(
     y: float = 50,
     width: float = 250,
     height: float = 60,
+    tsa_url: str = None,
+    tsa_username: str = None,
+    tsa_password: str = None,
 ) -> str:
     """
     Firma un PDF usando un certificado .p12.
     Genera una apariencia visual tipo FirmaEC: QR a la izquierda + texto a la derecha.
     Retorna la ruta del archivo PDF firmado temporal.
     """
-    p12_temp_path = None
     stamp_img_path = None
 
     try:
-        # ── 1. Guardar .p12 temporalmente ──────────────────────────────────
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.p12') as p12_tmp:
-            p12_tmp.write(p12_content)
-            p12_temp_path = p12_tmp.name
-
-        # ── 2. Extraer nombre del firmante ─────────────────────────────────
+        # ── 1. Extraer nombre del firmante ─────────────────────────────────
         signer_name = _extract_cn_from_p12(p12_content, password)
 
-        # ── 3. Cargar el firmante pyHanko ──────────────────────────────────
-        signer = signers.SimpleSigner.load_pkcs12(
-            p12_temp_path, passphrase=password.encode('utf-8')
-        )
-        if signer is None:
-            raise ValueError(
-                "No se pudo cargar el certificado o la clave privada. "
-                "Verifique que la contraseña sea correcta y que el archivo esté en formato .p12 o .pfx válido."
-            )
+        # ── 2. Cargar el firmante pyHanko (en memoria, soporta Uanataca y Security Data) ──
+        signer = _load_signer_from_p12_bytes(p12_content, password)
 
         # ── 4. Generar imagen de estampa (QR + texto) ──────────────────────
         now = datetime.now(tz=timezone.utc)
@@ -121,11 +173,21 @@ def sign_pdf_service(
                 SigFieldSpec('FirmaDigital', box=box_coords, on_page=page - 1),
             )
 
+            # Configurar sellado de tiempo si se especifica tsa_url
+            timestamper = None
+            if tsa_url:
+                from pyhanko.sign.timestamps import HTTPTimeStamper
+                tsa_auth = None
+                if tsa_username and tsa_password:
+                    tsa_auth = (tsa_username, tsa_password)
+                timestamper = HTTPTimeStamper(url=tsa_url, auth=tsa_auth)
+
             with open(output_pdf_path, 'wb') as out_f:
                 pdf_signer = PdfSigner(
                     PdfSignatureMetadata(field_name='FirmaDigital'),
                     signer=signer,
                     stamp_style=stamp_style,
+                    timestamper=timestamper,
                 )
                 pdf_signer.sign_pdf(w, in_place=False, output=out_f)
 
@@ -135,7 +197,6 @@ def sign_pdf_service(
         raise Exception(f'Error en la firma digital: {str(e)}')
 
     finally:
-        # Limpiar archivos temporales de credenciales
-        for path in (p12_temp_path, stamp_img_path):
-            if path and os.path.exists(path):
-                os.remove(path)
+        # Limpiar archivos temporales
+        if stamp_img_path and os.path.exists(stamp_img_path):
+            os.remove(stamp_img_path)

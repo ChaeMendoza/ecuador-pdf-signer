@@ -61,7 +61,22 @@ def document_sign(request, pk):
                 width = form.cleaned_data['width']
                 height = form.cleaned_data['height']
                 
-                signed_pdf_path = sign_pdf_service(input_pdf_path, p12_content, password, page, x, y, width, height)
+                tsa_choice = form.cleaned_data.get('tsa_url', '')
+                custom_tsa = form.cleaned_data.get('custom_tsa_url', '')
+                tsa_url = custom_tsa if tsa_choice == 'custom' else tsa_choice
+                if not tsa_url:
+                    tsa_url = None
+                
+                tsa_username = form.cleaned_data.get('tsa_username', '').strip()
+                tsa_password = form.cleaned_data.get('tsa_password', '').strip()
+                if not tsa_username or not tsa_password:
+                    tsa_username = None
+                    tsa_password = None
+                
+                signed_pdf_path = sign_pdf_service(
+                    input_pdf_path, p12_content, password, page, x, y, width, height,
+                    tsa_url=tsa_url, tsa_username=tsa_username, tsa_password=tsa_password
+                )
                 
                 with open(signed_pdf_path, 'rb') as f:
                     file_name = os.path.basename(document.original_file.name)
@@ -103,6 +118,18 @@ def batch_sign(request):
             y = form.cleaned_data['y']
             width = form.cleaned_data['width']
             height = form.cleaned_data['height']
+            
+            tsa_choice = form.cleaned_data.get('tsa_url', '')
+            custom_tsa = form.cleaned_data.get('custom_tsa_url', '')
+            tsa_url = custom_tsa if tsa_choice == 'custom' else tsa_choice
+            if not tsa_url:
+                tsa_url = None
+                
+            tsa_username = form.cleaned_data.get('tsa_username', '').strip()
+            tsa_password = form.cleaned_data.get('tsa_password', '').strip()
+            if not tsa_username or not tsa_password:
+                tsa_username = None
+                tsa_password = None
             
             if len(documents) > 100:
                 messages.error(request, 'No se pueden procesar más de 100 documentos a la vez.')
@@ -149,7 +176,10 @@ def batch_sign(request):
                     
                     try:
                         # Firmar
-                        signed_pdf_path = sign_pdf_service(tmp_pdf_path, p12_content, password, page, x, y, width, height)
+                        signed_pdf_path = sign_pdf_service(
+                            tmp_pdf_path, p12_content, password, page, x, y, width, height,
+                            tsa_url=tsa_url, tsa_username=tsa_username, tsa_password=tsa_password
+                        )
                         
                         # Agregar al ZIP
                         signed_name = f"signed_{doc_file.name}"

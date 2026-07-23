@@ -34,6 +34,20 @@ def api_sign_individual(request):
     if not password:
         return JsonResponse({'error': 'Falta la contraseña del certificado ("password")'}, status=400)
     
+    tsa_url = request.POST.get('tsa_url')
+    if not tsa_url:
+        tsa_url = None
+        
+    tsa_username = request.POST.get('tsa_username')
+    tsa_password = request.POST.get('tsa_password')
+    if tsa_username:
+        tsa_username = tsa_username.strip()
+    if tsa_password:
+        tsa_password = tsa_password.strip()
+    if not tsa_username or not tsa_password:
+        tsa_username = None
+        tsa_password = None
+        
     # 2. Obtener parámetros de posición (Perfil o Coordenadas)
     profile_id = request.POST.get('profile_id')
     if profile_id:
@@ -80,7 +94,8 @@ def api_sign_individual(request):
     try:
         input_pdf_path = document.original_file.path
         signed_pdf_path = sign_pdf_service(
-            input_pdf_path, p12_content, password, page, x, y, width, height
+            input_pdf_path, p12_content, password, page, x, y, width, height,
+            tsa_url=tsa_url, tsa_username=tsa_username, tsa_password=tsa_password
         )
         
         # Guardar archivo firmado en el modelo
@@ -157,6 +172,20 @@ def api_sign_batch(request):
     password = request.POST.get('password')
     if not password:
         return JsonResponse({'error': 'Falta la contraseña del certificado ("password")'}, status=400)
+        
+    tsa_url = request.POST.get('tsa_url')
+    if not tsa_url:
+        tsa_url = None
+        
+    tsa_username = request.POST.get('tsa_username')
+    tsa_password = request.POST.get('tsa_password')
+    if tsa_username:
+        tsa_username = tsa_username.strip()
+    if tsa_password:
+        tsa_password = tsa_password.strip()
+    if not tsa_username or not tsa_password:
+        tsa_username = None
+        tsa_password = None
         
     # Obtener parámetros de posición (Perfil o Coordenadas)
     profile = None
@@ -238,7 +267,8 @@ def api_sign_batch(request):
                 
                 try:
                     signed_pdf_path = sign_pdf_service(
-                        tmp_pdf_path, p12_content, password, page, x, y, width, height
+                        tmp_pdf_path, p12_content, password, page, x, y, width, height,
+                        tsa_url=tsa_url, tsa_username=tsa_username, tsa_password=tsa_password
                     )
                     
                     signed_name = f"signed_{doc_file.name}"
@@ -272,7 +302,8 @@ def api_sign_batch(request):
             try:
                 input_pdf_path = document.original_file.path
                 signed_pdf_path = sign_pdf_service(
-                    input_pdf_path, p12_content, password, page, x, y, width, height
+                    input_pdf_path, p12_content, password, page, x, y, width, height,
+                    tsa_url=tsa_url, tsa_username=tsa_username, tsa_password=tsa_password
                 )
                 
                 with open(signed_pdf_path, 'rb') as f:
